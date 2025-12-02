@@ -1,0 +1,528 @@
+@* Real-Time Energy Flow - Redesigned to match reference image *@
+
+<div class="mb-8">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-6">
+        <h2 class="text-2xl font-bold flex items-center gap-3">
+            <span class="text-yellow-400">⚡</span>
+            <span class="text-white">Real-Time Energy Flow</span>
+        </h2>
+        <div class="flex items-center gap-2">
+            <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+            <span class="text-sm text-gray-400">Live</span>
+        </div>
+    </div>
+
+    <!-- Energy Flow Grid - 3 columns x 2 rows -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+        
+        <!-- ROW 1 -->
+        
+        <!-- Solar PV Card -->
+        <div id="solar-card" class="energy-flow-card solar-card" data-type="solar">
+            <div class="card-inner">
+                <!-- Moving glow ring effect -->
+                <div class="moving-glow-ring"></div>
+                <div class="moving-glow-ring" style="animation-delay: 1s;"></div>
+                
+                <!-- Icon container -->
+                <div class="icon-container">
+                    <svg class="energy-icon" viewBox="0 0 100 100">
+                        <!-- Sun icon -->
+                        <circle cx="50" cy="50" r="15" fill="#FDB813" />
+                        <!-- Sun rays -->
+                        <g stroke="#FDB813" stroke-width="3" stroke-linecap="round">
+                            <line x1="50" y1="15" x2="50" y2="25" />
+                            <line x1="50" y1="75" x2="50" y2="85" />
+                            <line x1="15" y1="50" x2="25" y2="50" />
+                            <line x1="75" y1="50" x2="85" y2="50" />
+                            <line x1="25" y1="25" x2="32" y2="32" />
+                            <line x1="68" y1="68" x2="75" y2="75" />
+                            <line x1="25" y1="75" x2="32" y2="68" />
+                            <line x1="68" y1="32" x2="75" y2="25" />
+                        </g>
+                        <!-- Pulsing circle -->
+                        <circle cx="50" cy="50" r="18" fill="none" stroke="#FDB813" stroke-width="1" opacity="0.4">
+                            <animate attributeName="r" values="18;24;18" dur="2s" repeatCount="indefinite" />
+                            <animate attributeName="opacity" values="0.4;0;0.4" dur="2s" repeatCount="indefinite" />
+                        </circle>
+                    </svg>
+                </div>
+                
+                <!-- Text content -->
+                <div class="card-content">
+                    <div class="card-label">Solar PV</div>
+                    <div class="card-value" id="solar-value">2760W</div>
+                    <div class="card-details">
+                        <span id="solar-voltage">400V</span>
+                        <span class="mx-1">•</span>
+                        <span id="solar-current">6.9A</span>
+                        <span class="mx-1">•</span>
+                        <span id="solar-frequency">50Hz</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Device/Inverter Card (Center) -->
+        <div id="device-card" class="energy-flow-card device-card" data-type="device">
+            <div class="card-inner">
+                <!-- Icon container -->
+                <div class="icon-container">
+                    <svg class="energy-icon" viewBox="0 0 100 100">
+                        <!-- Inverter box -->
+                        <rect x="30" y="30" width="40" height="40" rx="4" fill="#4B5563" stroke="#6B7280" stroke-width="2"/>
+                        <!-- Display screen -->
+                        <rect x="35" y="35" width="30" height="15" rx="2" fill="#1F2937"/>
+                        <!-- Indicator lights -->
+                        <circle cx="42" cy="58" r="2" fill="#10B981" opacity="0.8">
+                            <animate attributeName="opacity" values="0.3;1;0.3" dur="2s" repeatCount="indefinite" />
+                        </circle>
+                        <circle cx="50" cy="58" r="2" fill="#10B981" opacity="0.8">
+                            <animate attributeName="opacity" values="0.3;1;0.3" dur="2s" repeatCount="indefinite" begin="0.5s" />
+                        </circle>
+                        <circle cx="58" cy="58" r="2" fill="#10B981" opacity="0.8">
+                            <animate attributeName="opacity" values="0.3;1;0.3" dur="2s" repeatCount="indefinite" begin="1s" />
+                        </circle>
+                        <!-- Buttons -->
+                        <rect x="38" y="63" width="7" height="5" rx="1" fill="#374151"/>
+                        <rect x="55" y="63" width="7" height="5" rx="1" fill="#374151"/>
+                    </svg>
+                </div>
+                
+                <!-- Text content -->
+                <div class="card-content">
+                    <div class="card-value text-xl" id="device-name">SUNT-8.0KW-P</div>
+                    <div class="card-details" id="device-temp">43°C</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Power Grid Card -->
+        <div id="grid-card" class="energy-flow-card grid-card" data-type="grid">
+            <div class="card-inner">
+                <!-- Moving glow ring effect -->
+                <div class="moving-glow-ring"></div>
+                <div class="moving-glow-ring" style="animation-delay: 1.5s;"></div>
+                
+                <!-- Icon container -->
+                <div class="icon-container">
+                    <svg class="energy-icon" viewBox="0 0 100 100">
+                        <!-- Electric tower -->
+                        <g fill="none" stroke="#A855F7" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <!-- Tower body -->
+                            <line x1="50" y1="20" x2="50" y2="80" />
+                            <line x1="40" y1="30" x2="60" y2="30" />
+                            <line x1="35" y1="45" x2="65" y2="45" />
+                            <line x1="30" y1="60" x2="70" y2="60" />
+                            <line x1="25" y1="75" x2="75" y2="75" />
+                            <!-- Cross beams -->
+                            <line x1="40" y1="30" x2="30" y2="45" />
+                            <line x1="60" y1="30" x2="70" y2="45" />
+                            <line x1="35" y1="45" x2="25" y2="60" />
+                            <line x1="65" y1="45" x2="75" y2="60" />
+                            <!-- Top antenna -->
+                            <line x1="50" y1="20" x2="45" y2="15" />
+                            <line x1="50" y1="20" x2="55" y2="15" />
+                        </g>
+                        <!-- Energy pulse -->
+                        <circle cx="50" cy="50" r="20" fill="none" stroke="#A855F7" stroke-width="1" opacity="0.5">
+                            <animate attributeName="r" values="15;25;15" dur="2s" repeatCount="indefinite" />
+                            <animate attributeName="opacity" values="0.5;0;0.5" dur="2s" repeatCount="indefinite" />
+                        </circle>
+                    </svg>
+                </div>
+                
+                <!-- Text content -->
+                <div class="card-content">
+                    <div class="card-label">Power Grid</div>
+                    <div class="card-value" id="grid-value">8W</div>
+                    <div class="card-details" id="grid-voltage-detail">231V</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ROW 2 -->
+        
+        <!-- Battery Card -->
+        <div id="battery-card" class="energy-flow-card battery-card" data-type="battery" data-state="charging">
+            <div class="card-inner">
+                <!-- Moving glow ring effect - changes color based on charge/discharge -->
+                <div class="moving-glow-ring charging-glow"></div>
+                <div class="moving-glow-ring charging-glow" style="animation-delay: 1s;"></div>
+                
+                <!-- Charge/Discharge indicator -->
+                <div class="battery-indicator">
+                    <div class="charge-arrow">↑</div>
+                    <div class="discharge-arrow hidden">↓</div>
+                </div>
+                
+                <!-- Icon container -->
+                <div class="icon-container">
+                    <svg class="energy-icon" viewBox="0 0 100 100">
+                        <!-- Battery body -->
+                        <rect x="25" y="35" width="50" height="35" rx="4" fill="none" stroke="#10B981" stroke-width="2.5"/>
+                        <!-- Battery terminal -->
+                        <rect x="75" y="48" width="5" height="10" rx="1" fill="#10B981"/>
+                        <!-- Battery level (dynamic) -->
+                        <rect id="battery-level-svg" x="28" y="38" width="5" height="29" rx="2" fill="#10B981" opacity="0.8">
+                            <animate attributeName="opacity" values="0.6;1;0.6" dur="1.5s" repeatCount="indefinite" />
+                        </rect>
+                        <!-- Percentage text -->
+                        <text x="50" y="57" text-anchor="middle" font-size="16" font-weight="bold" fill="#10B981" id="battery-percentage-svg">13%</text>
+                    </svg>
+                </div>
+                
+                <!-- Text content -->
+                <div class="card-content">
+                    <div class="card-label">Battery</div>
+                    <div class="card-value charge-text" id="battery-value">+433W</div>
+                    <div class="card-details" id="battery-details">Charging</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Essential Load Card -->
+        <div id="essential-card" class="energy-flow-card essential-card inactive-card" data-type="essential">
+            <div class="card-inner">
+                <!-- Icon container -->
+                <div class="icon-container">
+                    <svg class="energy-icon grayscale-icon" viewBox="0 0 100 100">
+                        <!-- Lightning bolt for essential load -->
+                        <path d="M55 20 L35 50 L50 50 L45 80 L65 50 L50 50 Z" fill="#6B7280" stroke="#4B5563" stroke-width="2" stroke-linejoin="round"/>
+                        <!-- Star indicator -->
+                        <polygon points="50,10 52,16 58,16 53,20 55,26 50,22 45,26 47,20 42,16 48,16" fill="#F59E0B" opacity="0.3"/>
+                    </svg>
+                </div>
+                
+                <!-- Text content -->
+                <div class="card-content">
+                    <div class="card-label">Essential</div>
+                    <div class="card-value inactive-text" id="essential-value">0W</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Home Load Card -->
+        <div id="load-card" class="energy-flow-card load-card" data-type="load">
+            <div class="card-inner">
+                <!-- Moving glow ring effect -->
+                <div class="moving-glow-ring"></div>
+                <div class="moving-glow-ring" style="animation-delay: 0.7s;"></div>
+                
+                <!-- Icon container -->
+                <div class="icon-container">
+                    <svg class="energy-icon" viewBox="0 0 100 100">
+                        <!-- House icon -->
+                        <g fill="none" stroke="#EF4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <!-- Roof -->
+                            <path d="M 20 50 L 50 25 L 80 50" />
+                            <!-- House body -->
+                            <rect x="30" y="50" width="40" height="30" />
+                            <!-- Door -->
+                            <rect x="43" y="60" width="14" height="20" />
+                            <!-- Windows -->
+                            <rect x="35" y="55" width="8" height="8" />
+                            <rect x="57" y="55" width="8" height="8" />
+                            <!-- Chimney -->
+                            <rect x="65" y="35" width="6" height="15" />
+                        </g>
+                        <!-- Energy consumption indicator -->
+                        <circle cx="50" cy="50" r="22" fill="none" stroke="#EF4444" stroke-width="1" opacity="0.4">
+                            <animate attributeName="r" values="22;28;22" dur="2s" repeatCount="indefinite" />
+                            <animate attributeName="opacity" values="0.4;0;0.4" dur="2s" repeatCount="indefinite" />
+                        </circle>
+                    </svg>
+                </div>
+                
+                <!-- Text content -->
+                <div class="card-content">
+                    <div class="card-label">Home Load</div>
+                    <div class="card-value" id="load-value">2159W</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<style>
+/* Energy Flow Card Styles */
+.energy-flow-card {
+    position: relative;
+    border-radius: 1rem;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    min-height: 200px;
+    backdrop-filter: blur(10px);
+}
+
+.card-inner {
+    position: relative;
+    height: 100%;
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    z-index: 1;
+}
+
+/* Moving Glow Ring Animation */
+.moving-glow-ring {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 0;
+    animation: moveGlow 3s ease-in-out infinite;
+}
+
+@@keyframes moveGlow {
+    0%, 100% {
+        transform: translate(-50%, -50%) scale(0.8);
+        opacity: 0.8;
+    }
+    50% {
+        transform: translate(-50%, -50%) scale(1.3);
+        opacity: 0.2;
+    }
+}
+
+/* Card Type Specific Styles */
+.solar-card {
+    background: radial-gradient(circle at 30% 30%, rgba(251, 191, 36, 0.2), rgba(217, 119, 6, 0.05));
+    border: 1.5px solid rgba(251, 191, 36, 0.3);
+}
+
+.solar-card .moving-glow-ring {
+    box-shadow: 0 0 40px 20px rgba(251, 191, 36, 0.4),
+                0 0 60px 30px rgba(251, 191, 36, 0.2);
+}
+
+.grid-card {
+    background: radial-gradient(circle at 30% 30%, rgba(168, 85, 247, 0.2), rgba(126, 34, 206, 0.05));
+    border: 1.5px solid rgba(168, 85, 247, 0.3);
+}
+
+.grid-card .moving-glow-ring {
+    box-shadow: 0 0 40px 20px rgba(168, 85, 247, 0.4),
+                0 0 60px 30px rgba(168, 85, 247, 0.2);
+}
+
+.battery-card {
+    background: radial-gradient(circle at 30% 30%, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.05));
+    border: 1.5px solid rgba(16, 185, 129, 0.3);
+    position: relative;
+}
+
+.battery-card .charging-glow {
+    box-shadow: 0 0 40px 20px rgba(16, 185, 129, 0.5),
+                0 0 60px 30px rgba(16, 185, 129, 0.3);
+}
+
+.battery-card[data-state="discharging"] .charging-glow {
+    box-shadow: 0 0 40px 20px rgba(239, 68, 68, 0.5),
+                0 0 60px 30px rgba(239, 68, 68, 0.3);
+}
+
+.load-card {
+    background: radial-gradient(circle at 30% 30%, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.05));
+    border: 1.5px solid rgba(239, 68, 68, 0.3);
+}
+
+.load-card .moving-glow-ring {
+    box-shadow: 0 0 40px 20px rgba(239, 68, 68, 0.4),
+                0 0 60px 30px rgba(239, 68, 68, 0.2);
+}
+
+.essential-card {
+    background: radial-gradient(circle at 30% 30%, rgba(249, 115, 22, 0.15), rgba(234, 88, 12, 0.05));
+    border: 1.5px solid rgba(249, 115, 22, 0.2);
+}
+
+.device-card {
+    background: radial-gradient(circle at 30% 30%, rgba(107, 114, 128, 0.2), rgba(75, 85, 99, 0.05));
+    border: 1.5px solid rgba(107, 114, 128, 0.3);
+}
+
+/* Inactive Card */
+.inactive-card {
+    opacity: 0.4;
+    filter: grayscale(70%);
+}
+
+.inactive-card .moving-glow-ring {
+    display: none;
+}
+
+/* Icon Container */
+.icon-container {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+}
+
+.energy-icon {
+    width: 80px;
+    height: 80px;
+    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.3));
+}
+
+.grayscale-icon {
+    filter: grayscale(100%) opacity(0.5);
+}
+
+/* Card Content */
+.card-content {
+    text-align: center;
+    z-index: 2;
+}
+
+.card-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.7);
+    margin-bottom: 0.25rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.card-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #ffffff;
+    line-height: 1.2;
+}
+
+.card-details {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.5);
+    margin-top: 0.25rem;
+}
+
+.inactive-text {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+/* Battery Specific Styles */
+.battery-indicator {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    z-index: 3;
+}
+
+.charge-arrow,
+.discharge-arrow {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    font-weight: bold;
+    animation: pulseArrow 1.5s ease-in-out infinite;
+}
+
+.charge-arrow {
+    background: rgba(16, 185, 129, 0.3);
+    color: #10B981;
+    border: 2px solid rgba(16, 185, 129, 0.5);
+}
+
+.discharge-arrow {
+    background: rgba(239, 68, 68, 0.3);
+    color: #EF4444;
+    border: 2px solid rgba(239, 68, 68, 0.5);
+}
+
+@@keyframes pulseArrow {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.1);
+        opacity: 0.8;
+    }
+}
+
+.charge-text {
+    color: #10B981;
+}
+
+.discharge-text {
+    color: #EF4444;
+}
+
+/* Responsive */
+@@media (max-width: 768px) {
+    .energy-flow-card {
+        min-height: 160px;
+    }
+    
+    .card-inner {
+        padding: 1.5rem 1rem;
+    }
+    
+    .icon-container {
+        width: 70px;
+        height: 70px;
+    }
+    
+    .energy-icon {
+        width: 60px;
+        height: 60px;
+    }
+    
+    .card-value {
+        font-size: 1.5rem;
+    }
+    
+    .moving-glow-ring {
+        width: 100px;
+        height: 100px;
+    }
+}
+
+/* Dark mode adjustments */
+.dark .card-label {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.dark .card-details {
+    color: rgba(255, 255, 255, 0.4);
+}
+
+/* Hover effects */
+.energy-flow-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
+}
+
+.energy-flow-card:hover .energy-icon {
+    transform: scale(1.05);
+    transition: transform 0.3s ease;
+}
+
+/* Accessibility */
+@@media (prefers-reduced-motion: reduce) {
+    .moving-glow-ring,
+    .charge-arrow,
+    .discharge-arrow,
+    .energy-icon animate {
+        animation: none !important;
+    }
+}
+</style>

@@ -10,6 +10,13 @@ public class Program
     public static void Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
+        
+        // Configure Kestrel to listen on all network interfaces
+        builder.WebHost.ConfigureKestrel(serverOptions =>
+        {
+            serverOptions.ListenAnyIP(8080); // HTTP
+        });
+        
         builder.Host.UseSerilog();
 
         // Configure Serilog
@@ -47,7 +54,8 @@ public class Program
             app.UseHsts();
         }
 
-        app.UseHttpsRedirection();
+        // Disable HTTPS redirection for sandbox environment
+        // app.UseHttpsRedirection();
         app.UseStaticFiles();
 
         app.UseRouting();

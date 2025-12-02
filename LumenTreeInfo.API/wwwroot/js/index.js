@@ -123,6 +123,24 @@ document.addEventListener('DOMContentLoaded', function () {
         if (connectionIndicator) {
             connectionIndicator.className = `w-3 h-3 rounded-full ${connected ? 'bg-green-500' : 'bg-red-500'}`;
         }
+        
+        // Update header connection status
+        const headerIndicator = document.getElementById('headerConnectionIndicator');
+        const headerStatus = document.getElementById('headerConnectionStatus');
+        const headerText = document.getElementById('headerConnectionText');
+        
+        if (headerIndicator) {
+            headerIndicator.className = `w-2 h-2 rounded-full ${connected ? 'bg-green-500' : 'bg-red-500 animate-pulse'}`;
+        }
+        
+        if (headerText) {
+            headerText.textContent = connected ? 'Connected' : 'Disconnected';
+            headerText.className = `text-xs font-medium ${connected ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`;
+        }
+        
+        if (headerStatus) {
+            headerStatus.classList.remove('hidden');
+        }
     }
 
     /**
@@ -350,7 +368,27 @@ document.addEventListener('DOMContentLoaded', function () {
     function updateRealTimeDisplay(data) {
         console.log("Updating real-time display with data:", data);
 
-        // Get elements
+        // Update new Real-Time Energy Flow cards
+        if (window.RealTimeFlow) {
+            const flowData = {
+                pvPower: data.pvTotalPower || 0,
+                pvVoltage: data.pv1Voltage || 0,
+                pvCurrent: data.pv1Current || 0,
+                acFrequency: data.acFrequency || 50,
+                deviceId: data.deviceId || 'SUNT-8.0KW-P',
+                temperature: data.inverterTemperature || 0,
+                gridPower: data.gridValue || 0,
+                gridVoltage: data.gridVoltageValue || 0,
+                batteryPower: data.batteryValue || 0,
+                batteryPercentage: data.batteryPercent || 0,
+                batteryStatus: data.batteryStatus || 'Idle',
+                essentialPower: data.essentialPower || 0,
+                loadPower: data.loadPower || 0
+            };
+            window.RealTimeFlow.updateAll(flowData);
+        }
+
+        // Get elements (keep for backward compatibility)
         const pvPower = document.getElementById('pv-power');
         const pvDesc = document.getElementById('pv-desc');
         const gridPower = document.getElementById('grid-power');
