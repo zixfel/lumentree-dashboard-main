@@ -92,7 +92,7 @@
     </div>
 </div>
 
-@await Html.PartialAsync("_RealTimeEnergyFlow")
+@await Html.PartialAsync("_RealTimeEnergyFlowNew")
 
 <!-- Summary Statistics Cards (kept for backward compatibility) -->
 <div id="summaryStatsTemp" class="hidden">
@@ -365,10 +365,11 @@
     <!-- SignalR Client Library -->
     <script src="https://unpkg.com/@@microsoft/signalr@@latest"></script>
 
-    <link href="~/css/index.css?v=07000" rel="stylesheet" />
-    <link href="~/css/energy-effects.css?v=07000" rel="stylesheet" />
+    <link href="~/css/index.css?v=08000" rel="stylesheet" />
+    <link href="~/css/energy-effects.css?v=08000" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="~/js/energy-effects.js?v=07000"></script>
-    <script src="~/js/index.js?v=07000"></script>
+    <script src="~/js/real-time-flow.js?v=08000"></script>
+    <script src="~/js/energy-effects.js?v=08000"></script>
+    <script src="~/js/index.js?v=08000"></script>
 }
 

@@ -368,7 +368,27 @@ document.addEventListener('DOMContentLoaded', function () {
     function updateRealTimeDisplay(data) {
         console.log("Updating real-time display with data:", data);
 
-        // Get elements
+        // Update new Real-Time Energy Flow cards
+        if (window.RealTimeFlow) {
+            const flowData = {
+                pvPower: data.pvTotalPower || 0,
+                pvVoltage: data.pv1Voltage || 0,
+                pvCurrent: data.pv1Current || 0,
+                acFrequency: data.acFrequency || 50,
+                deviceId: data.deviceId || 'SUNT-8.0KW-P',
+                temperature: data.inverterTemperature || 0,
+                gridPower: data.gridValue || 0,
+                gridVoltage: data.gridVoltageValue || 0,
+                batteryPower: data.batteryValue || 0,
+                batteryPercentage: data.batteryPercent || 0,
+                batteryStatus: data.batteryStatus || 'Idle',
+                essentialPower: data.essentialPower || 0,
+                loadPower: data.loadPower || 0
+            };
+            window.RealTimeFlow.updateAll(flowData);
+        }
+
+        // Get elements (keep for backward compatibility)
         const pvPower = document.getElementById('pv-power');
         const pvDesc = document.getElementById('pv-desc');
         const gridPower = document.getElementById('grid-power');
