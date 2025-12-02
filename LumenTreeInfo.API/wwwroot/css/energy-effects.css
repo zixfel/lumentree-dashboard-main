@@ -1,0 +1,354 @@
+/**
+ * Advanced Energy Flow Effects with Glowing Rings
+ * Inspired by modern energy dashboard animations
+ */
+
+/* ==================== GLOWING RING ANIMATIONS ==================== */
+
+/* Base glowing ring container */
+.glow-container {
+    position: relative;
+    display: inline-block;
+}
+
+/* Outer rotating glow ring */
+.glow-ring {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 120%;
+    height: 120%;
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+/* Multiple layered glow rings */
+.glow-ring::before,
+.glow-ring::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.glow-ring::before {
+    width: 100%;
+    height: 100%;
+    opacity: 0.6;
+}
+
+.glow-ring::after {
+    width: 120%;
+    height: 120%;
+    opacity: 0.3;
+    animation-delay: 0.5s;
+}
+
+/* Pulsing glow animation */
+@keyframes pulse-glow {
+    0%, 100% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 0.6;
+    }
+    50% {
+        transform: translate(-50%, -50%) scale(1.1);
+        opacity: 0.3;
+    }
+}
+
+/* Rotating glow effect */
+@keyframes rotate-glow {
+    0% { transform: translate(-50%, -50%) rotate(0deg); }
+    100% { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* Spinning gradient ring */
+.spinning-ring {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 140%;
+    height: 140%;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background: conic-gradient(
+        from 0deg,
+        transparent 0deg,
+        var(--glow-color) 90deg,
+        transparent 180deg,
+        var(--glow-color) 270deg,
+        transparent 360deg
+    );
+    animation: rotate-glow 3s linear infinite;
+    opacity: 0.5;
+    filter: blur(10px);
+}
+
+/* ==================== COLOR VARIATIONS ==================== */
+
+/* Solar/PV Yellow Glow */
+.glow-solar .glow-ring::before {
+    box-shadow: 0 0 30px 10px rgba(251, 191, 36, 0.6),
+                0 0 50px 20px rgba(251, 191, 36, 0.4),
+                0 0 70px 30px rgba(251, 191, 36, 0.2);
+}
+
+.glow-solar .glow-ring::after {
+    box-shadow: 0 0 40px 15px rgba(251, 191, 36, 0.5),
+                0 0 60px 25px rgba(251, 191, 36, 0.3);
+}
+
+.glow-solar {
+    --glow-color: rgba(251, 191, 36, 0.6);
+}
+
+/* Battery Green Glow */
+.glow-battery .glow-ring::before {
+    box-shadow: 0 0 30px 10px rgba(34, 197, 94, 0.6),
+                0 0 50px 20px rgba(34, 197, 94, 0.4),
+                0 0 70px 30px rgba(34, 197, 94, 0.2);
+}
+
+.glow-battery .glow-ring::after {
+    box-shadow: 0 0 40px 15px rgba(34, 197, 94, 0.5),
+                0 0 60px 25px rgba(34, 197, 94, 0.3);
+}
+
+.glow-battery {
+    --glow-color: rgba(34, 197, 94, 0.6);
+}
+
+/* Grid Purple Glow */
+.glow-grid .glow-ring::before {
+    box-shadow: 0 0 30px 10px rgba(168, 85, 247, 0.6),
+                0 0 50px 20px rgba(168, 85, 247, 0.4),
+                0 0 70px 30px rgba(168, 85, 247, 0.2);
+}
+
+.glow-grid .glow-ring::after {
+    box-shadow: 0 0 40px 15px rgba(168, 85, 247, 0.5),
+                0 0 60px 25px rgba(168, 85, 247, 0.3);
+}
+
+.glow-grid {
+    --glow-color: rgba(168, 85, 247, 0.6);
+}
+
+/* Load Red Glow */
+.glow-load .glow-ring::before {
+    box-shadow: 0 0 30px 10px rgba(239, 68, 68, 0.6),
+                0 0 50px 20px rgba(239, 68, 68, 0.4),
+                0 0 70px 30px rgba(239, 68, 68, 0.2);
+}
+
+.glow-load .glow-ring::after {
+    box-shadow: 0 0 40px 15px rgba(239, 68, 68, 0.5),
+                0 0 60px 25px rgba(239, 68, 68, 0.3);
+}
+
+.glow-load {
+    --glow-color: rgba(239, 68, 68, 0.6);
+}
+
+/* Essential Orange Glow */
+.glow-essential .glow-ring::before {
+    box-shadow: 0 0 30px 10px rgba(249, 115, 22, 0.6),
+                0 0 50px 20px rgba(249, 115, 22, 0.4),
+                0 0 70px 30px rgba(249, 115, 22, 0.2);
+}
+
+.glow-essential .glow-ring::after {
+    box-shadow: 0 0 40px 15px rgba(249, 115, 22, 0.5),
+                0 0 60px 25px rgba(249, 115, 22, 0.3);
+}
+
+.glow-essential {
+    --glow-color: rgba(249, 115, 22, 0.6);
+}
+
+/* ==================== PARTICLE EFFECTS ==================== */
+
+.energy-particles {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.particle {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background: var(--particle-color, #fbbf24);
+    border-radius: 50%;
+    animation: float-particle 3s ease-in-out infinite;
+    opacity: 0;
+    box-shadow: 0 0 10px var(--particle-color, #fbbf24);
+}
+
+@keyframes float-particle {
+    0% {
+        transform: translateY(100%) scale(0);
+        opacity: 0;
+    }
+    50% {
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(-100%) scale(1);
+        opacity: 0;
+    }
+}
+
+.particle:nth-child(1) { left: 10%; animation-delay: 0s; }
+.particle:nth-child(2) { left: 30%; animation-delay: 0.5s; }
+.particle:nth-child(3) { left: 50%; animation-delay: 1s; }
+.particle:nth-child(4) { left: 70%; animation-delay: 1.5s; }
+.particle:nth-child(5) { left: 90%; animation-delay: 2s; }
+
+/* ==================== SVG ICON STYLES ==================== */
+
+.energy-icon {
+    width: 80px;
+    height: 80px;
+    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
+    transition: all 0.3s ease;
+}
+
+.energy-icon:hover {
+    transform: scale(1.1);
+    filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.2));
+}
+
+/* Animated SVG paths */
+.svg-path-animate {
+    stroke-dasharray: 1000;
+    stroke-dashoffset: 1000;
+    animation: draw-path 2s ease-in-out forwards;
+}
+
+@keyframes draw-path {
+    to {
+        stroke-dashoffset: 0;
+    }
+}
+
+/* ==================== ENERGY FLOW LINES ==================== */
+
+.flow-line {
+    position: absolute;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--flow-color), transparent);
+    animation: flow-animation 2s linear infinite;
+    opacity: 0.6;
+}
+
+@keyframes flow-animation {
+    0% {
+        transform: translateX(-100%);
+    }
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+/* Horizontal flow lines */
+.flow-line-horizontal {
+    top: 50%;
+    width: 100%;
+    transform: translateY(-50%);
+}
+
+/* Vertical flow lines */
+.flow-line-vertical {
+    left: 50%;
+    height: 100%;
+    width: 2px;
+    transform: translateX(-50%);
+    animation: flow-animation-vertical 2s linear infinite;
+}
+
+@keyframes flow-animation-vertical {
+    0% {
+        transform: translateX(-50%) translateY(-100%);
+    }
+    100% {
+        transform: translateX(-50%) translateY(100%);
+    }
+}
+
+/* ==================== INTERACTIVE STATES ==================== */
+
+/* Active state - brighter glow */
+.energy-card.active .glow-ring::before {
+    animation: pulse-glow-fast 1s ease-in-out infinite;
+}
+
+@keyframes pulse-glow-fast {
+    0%, 100% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 0.8;
+    }
+    50% {
+        transform: translate(-50%, -50%) scale(1.15);
+        opacity: 0.4;
+    }
+}
+
+/* Inactive state - dimmed */
+.energy-card.inactive {
+    opacity: 0.4;
+    filter: grayscale(80%);
+}
+
+.energy-card.inactive .glow-ring {
+    display: none;
+}
+
+/* ==================== RESPONSIVE ==================== */
+
+@media (max-width: 768px) {
+    .energy-icon {
+        width: 60px;
+        height: 60px;
+    }
+    
+    .glow-ring::before,
+    .glow-ring::after {
+        box-shadow: none !important;
+    }
+    
+    .spinning-ring {
+        display: none;
+    }
+}
+
+/* ==================== ACCESSIBILITY ==================== */
+
+@media (prefers-reduced-motion: reduce) {
+    .glow-ring::before,
+    .glow-ring::after,
+    .spinning-ring,
+    .particle,
+    .flow-line {
+        animation: none !important;
+    }
+}
+
+/* ==================== DARK MODE ADJUSTMENTS ==================== */
+
+.dark .glow-ring::before,
+.dark .glow-ring::after {
+    opacity: 0.8;
+}
+
+.dark .spinning-ring {
+    opacity: 0.7;
+}
