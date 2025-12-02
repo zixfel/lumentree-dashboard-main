@@ -1,6 +1,9 @@
-﻿.chart-container {
+/* Modern CSS for LumenTree Energy Monitor */
+
+/* Chart Container */
+.chart-container {
     position: relative;
-    height: 40vh; /* Reduced height for better mobile viewing */
+    height: 40vh;
     width: 100%;
     margin-bottom: 1.5rem;
 }
@@ -11,61 +14,376 @@
     }
 }
 
-.stat-card {
-    transition: all 0.3s ease;
-    cursor: pointer;
+/* Animations */
+@keyframes fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
-    .stat-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+@keyframes slide-in-right {
+    from {
+        opacity: 0;
+        transform: translateX(30px);
     }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
 
+@keyframes pulse-glow {
+    0%, 100% {
+        opacity: 1;
+        box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+    }
+    50% {
+        opacity: 0.8;
+        box-shadow: 0 0 40px rgba(59, 130, 246, 0.8);
+    }
+}
+
+@keyframes energy-flow {
+    0% {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: translateY(-10px) scale(1.1);
+        opacity: 0.7;
+    }
+    100% {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+}
+
+.animate-fade-in {
+    animation: fade-in 0.6s ease-out;
+}
+
+.animate-slide-in-right {
+    animation: slide-in-right 0.5s ease-out;
+}
+
+/* Stat Cards */
+.stat-card {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.3),
+        transparent
+    );
+    transition: left 0.5s;
+}
+
+.stat-card:hover::before {
+    left: 100%;
+}
+
+.stat-card:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.stat-card:active {
+    transform: translateY(-4px) scale(0.98);
+}
+
+/* Energy Cards */
+.energy-card {
+    position: relative;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.energy-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 1rem;
+    padding: 2px;
+    background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.5), transparent);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.energy-card:hover::after {
+    opacity: 1;
+}
+
+/* Smooth Scrolling */
 html {
     scroll-behavior: smooth;
 }
 
-/* Custom tooltip styling */
-.chartjs-tooltip {
-    opacity: 0;
-    position: absolute;
-    background: rgba(30, 30, 30, 0.9);
-    color: white;
-    border-radius: 5px;
-    padding: 10px;
-    font-size: 12px;
-    pointer-events: none;
-    transform: translate(-50%, 0);
-    transition: opacity 0.2s ease;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
 }
 
-/* Style enhancements for chart legends */
-.chartjs-legend {
-    font-size: 11px !important;
-    padding: 5px !important;
+::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 10px;
 }
 
-/* Better visual of chart hovering states */
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(to bottom, #3b82f6, #10b981);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(to bottom, #2563eb, #059669);
+}
+
+/* Dark mode scrollbar */
+.dark ::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+    background: linear-gradient(to bottom, #60a5fa, #34d399);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(to bottom, #3b82f6, #10b981);
+}
+
+/* Chart Canvas Hover */
+canvas {
+    transition: transform 0.2s ease;
+}
+
 canvas:hover {
     cursor: crosshair;
+    transform: scale(1.01);
 }
 
-
-/* Greyed out icons */
-.flow-item.inactive img {
+/* Inactive State for Energy Cards */
+.energy-card.inactive {
     opacity: 0.5;
+    filter: grayscale(80%);
+}
+
+.energy-card.inactive img {
+    opacity: 0.4;
     filter: grayscale(100%);
 }
 
-/* Mobile responsiveness */
+/* Loading Animation */
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Pulse Animation for Status Indicators */
+@keyframes pulse-dot {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.5;
+        transform: scale(1.2);
+    }
+}
+
+.animate-pulse-dot {
+    animation: pulse-dot 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Glassmorphism Effect */
+.glass-effect {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.dark .glass-effect {
+    background: rgba(17, 24, 39, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Button Ripple Effect */
+button {
+    position: relative;
+    overflow: hidden;
+}
+
+button::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.5);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+button:active::after {
+    width: 300px;
+    height: 300px;
+}
+
+/* Gradient Text */
+.gradient-text {
+    background: linear-gradient(to right, #3b82f6, #10b981);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Card Gradient Borders */
+.gradient-border {
+    position: relative;
+    background: linear-gradient(white, white) padding-box,
+                linear-gradient(to right, #3b82f6, #10b981) border-box;
+    border: 2px solid transparent;
+}
+
+.dark .gradient-border {
+    background: linear-gradient(#1f2937, #1f2937) padding-box,
+                linear-gradient(to right, #60a5fa, #34d399) border-box;
+}
+
+/* Mobile Responsive Energy Flow */
 @media (max-width: 640px) {
+    .energy-card {
+        min-height: 140px;
+    }
+    
+    .energy-card img {
+        width: 48px;
+        height: 48px;
+    }
+}
+
+@media (max-width: 768px) {
     #realTimeFlow .grid {
         grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
     }
+    
+    .chart-container {
+        height: 50vh;
+    }
+}
 
-    #realTimeFlow .flow-item {
-        height: auto;
-        min-height: 100px;
+/* Tooltip Styling */
+.chartjs-tooltip {
+    opacity: 0;
+    position: absolute;
+    background: rgba(17, 24, 39, 0.95);
+    color: white;
+    border-radius: 12px;
+    padding: 12px 16px;
+    font-size: 13px;
+    pointer-events: none;
+    transform: translate(-50%, -120%);
+    transition: opacity 0.3s ease;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.chartjs-tooltip::after {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-top: 8px solid rgba(17, 24, 39, 0.95);
+}
+
+/* Enhanced Focus Styles */
+input:focus,
+button:focus {
+    outline: none;
+    ring: 2px;
+    ring-color: rgba(59, 130, 246, 0.5);
+}
+
+/* Skeleton Loading Animation */
+@keyframes skeleton-loading {
+    0% {
+        background-position: -200px 0;
+    }
+    100% {
+        background-position: calc(200px + 100%) 0;
+    }
+}
+
+.skeleton {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200px 100%;
+    animation: skeleton-loading 1.5s infinite;
+}
+
+.dark .skeleton {
+    background: linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%);
+}
+
+/* Print Styles */
+@media print {
+    .no-print {
+        display: none !important;
+    }
+    
+    body {
+        background: white;
+    }
+    
+    .chart-container {
+        page-break-inside: avoid;
+    }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+    .stat-card,
+    .energy-card {
+        border-width: 3px;
     }
 }

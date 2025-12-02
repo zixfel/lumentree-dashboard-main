@@ -123,6 +123,24 @@ document.addEventListener('DOMContentLoaded', function () {
         if (connectionIndicator) {
             connectionIndicator.className = `w-3 h-3 rounded-full ${connected ? 'bg-green-500' : 'bg-red-500'}`;
         }
+        
+        // Update header connection status
+        const headerIndicator = document.getElementById('headerConnectionIndicator');
+        const headerStatus = document.getElementById('headerConnectionStatus');
+        const headerText = document.getElementById('headerConnectionText');
+        
+        if (headerIndicator) {
+            headerIndicator.className = `w-2 h-2 rounded-full ${connected ? 'bg-green-500' : 'bg-red-500 animate-pulse'}`;
+        }
+        
+        if (headerText) {
+            headerText.textContent = connected ? 'Connected' : 'Disconnected';
+            headerText.className = `text-xs font-medium ${connected ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`;
+        }
+        
+        if (headerStatus) {
+            headerStatus.classList.remove('hidden');
+        }
     }
 
     /**
