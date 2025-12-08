@@ -98,12 +98,20 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // Battery cell section toggle
-    const cellToggle = document.getElementById('cellToggle');
-    const cellContent = document.getElementById('cellContent');
-    if (cellToggle && cellContent) {
-        cellToggle.addEventListener('click', () => {
-            cellContent.classList.toggle('collapsed');
-            cellToggle.classList.toggle('rotated');
+    const cellSectionHeader = document.getElementById('cellSectionHeader');
+    const cellSectionContent = document.getElementById('cellSectionContent');
+    const toggleIcon = document.getElementById('toggleIcon');
+    const toggleText = document.getElementById('toggleText');
+    
+    if (cellSectionHeader && cellSectionContent) {
+        cellSectionHeader.addEventListener('click', () => {
+            const isCollapsed = cellSectionContent.classList.toggle('hidden');
+            if (toggleIcon) {
+                toggleIcon.style.transform = isCollapsed ? 'rotate(180deg)' : 'rotate(0deg)';
+            }
+            if (toggleText) {
+                toggleText.textContent = isCollapsed ? 'Hiện' : 'Ẩn';
+            }
         });
     }
 
@@ -393,25 +401,46 @@ document.addEventListener('DOMContentLoaded', function () {
         updateValue('grid-voltage', `${data.gridVoltageValue}V`);
 
         // Battery
-        updateValue('battery-percentage', `${data.batteryPercent}%`);
+        const batteryPercent = data.batteryPercent || 0;
+        
+        // Update battery percent display in icon
+        const batteryPercentIcon = document.getElementById('battery-percent-icon');
+        if (batteryPercentIcon) {
+            batteryPercentIcon.textContent = `${batteryPercent}%`;
+        }
+        
+        // Update battery fill level
+        const batteryFill = document.getElementById('battery-fill');
+        if (batteryFill) {
+            batteryFill.style.height = `${batteryPercent}%`;
+            // Change color based on level
+            if (batteryPercent < 20) {
+                batteryFill.className = 'battery-fill absolute bottom-0 left-0 right-0 bg-red-400/60';
+            } else if (batteryPercent < 50) {
+                batteryFill.className = 'battery-fill absolute bottom-0 left-0 right-0 bg-amber-400/60';
+            } else {
+                batteryFill.className = 'battery-fill absolute bottom-0 left-0 right-0 bg-emerald-400/60';
+            }
+        }
+        
+        // Update battery status text
+        const batteryStatusText = document.getElementById('battery-status-text');
+        if (batteryStatusText) {
+            if (data.batteryStatus === "Discharging") {
+                batteryStatusText.innerHTML = `<span class="text-red-500">Đang xả</span>`;
+            } else if (data.batteryStatus === "Charging") {
+                batteryStatusText.innerHTML = `<span class="text-green-500">Đang sạc</span>`;
+            } else {
+                batteryStatusText.innerHTML = `<span class="text-slate-500">Chờ</span>`;
+            }
+        }
+        
         const batteryPower = document.getElementById('battery-power');
         if (batteryPower) {
             if (data.batteryStatus === "Discharging") {
                 batteryPower.innerHTML = `<span class="text-red-600 dark:text-red-400">-${Math.abs(data.batteryValue)}W</span>`;
             } else {
                 batteryPower.innerHTML = `<span class="text-green-600 dark:text-green-400">+${Math.abs(data.batteryValue)}W</span>`;
-            }
-        }
-
-        // Update battery icon
-        const batteryIcon = document.getElementById('battery-icon');
-        if (batteryIcon) {
-            if (data.batteryPercent < 20) {
-                batteryIcon.src = "/images/icons/bat_low.png";
-            } else if (data.batteryPercent < 80) {
-                batteryIcon.src = "/images/icons/bat_medium.png";
-            } else {
-                batteryIcon.src = "/images/icons/bat_green.png";
             }
         }
 
@@ -442,15 +471,16 @@ document.addEventListener('DOMContentLoaded', function () {
         updateValue('cellAvg', '--');
         updateValue('cellMax', '--');
         updateValue('cellMin', '--');
-        updateValue('cellDiff', '--');
-
-        // Initialize cell grid
-        for (let i = 1; i <= 16; i++) {
-            const cell = document.getElementById(`cell${i}`);
-            if (cell) {
-                cell.textContent = '--';
-                cell.className = 'battery-cell';
-            }
+        updateValue('cellDiffValue', '--');
+        
+        // Show placeholder in cell grid
+        const cellGrid = document.getElementById('cellGrid');
+        if (cellGrid) {
+            cellGrid.innerHTML = `
+                <div class="cell-placeholder bg-slate-100 dark:bg-slate-800 rounded-lg h-16 flex items-center justify-center">
+                    <span class="text-slate-400 text-xs">Đang chờ dữ liệu cell...</span>
+                </div>
+            `;
         }
     }
 
@@ -467,44 +497,61 @@ document.addEventListener('DOMContentLoaded', function () {
         const max = Math.max(...validCells);
         const min = Math.min(...validCells);
         const diff = max - min;
+        
+        // Update cell count badge
+        const cellCountBadge = document.getElementById('cellCountBadge');
+        if (cellCountBadge) {
+            cellCountBadge.textContent = `${validCells.length} cell`;
+        }
 
         // Update summary
         updateValue('cellAvg', avg.toFixed(3) + 'V');
         updateValue('cellMax', max.toFixed(3) + 'V');
         updateValue('cellMin', min.toFixed(3) + 'V');
-        updateValue('cellDiff', (diff * 1000).toFixed(0) + 'mV');
+        updateValue('cellDiffValue', (diff * 1000).toFixed(0) + 'mV');
+        
+        // Update diff color
+        const diffEl = document.getElementById('cellDiffValue');
+        if (diffEl) {
+            diffEl.className = 'text-lg sm:text-2xl font-black';
+            if (diff > 0.05) {
+                diffEl.classList.add('text-red-600', 'dark:text-red-400');
+            } else if (diff > 0.02) {
+                diffEl.classList.add('text-amber-600', 'dark:text-amber-400');
+            } else {
+                diffEl.classList.add('text-green-600', 'dark:text-green-400');
+            }
+        }
 
-        // Update cell grid
-        cells.forEach((voltage, index) => {
-            const cell = document.getElementById(`cell${index + 1}`);
-            if (cell) {
-                cell.textContent = voltage > 0 ? voltage.toFixed(3) : '--';
-
-                // Color coding based on voltage deviation from average
-                cell.className = 'battery-cell';
+        // Generate cell grid dynamically
+        const cellGrid = document.getElementById('cellGrid');
+        if (cellGrid) {
+            let gridHtml = '<div class="grid">';
+            
+            cells.forEach((voltage, index) => {
                 if (voltage > 0) {
                     const deviation = Math.abs(voltage - avg);
-                    if (deviation < 0.01) {
-                        cell.classList.add('cell-excellent');
-                    } else if (deviation < 0.03) {
-                        cell.classList.add('cell-good');
+                    let colorClass = 'cell-default';
+                    
+                    if (deviation < 0.02) {
+                        colorClass = 'cell-good';
+                    } else if (deviation < 0.05) {
+                        colorClass = 'cell-ok';
                     } else {
-                        cell.classList.add('cell-warning');
+                        colorClass = 'cell-warning';
                     }
+                    
+                    gridHtml += `
+                        <div class="cell-item ${colorClass}">
+                            <span class="cell-label">C${index + 1}</span>
+                            <span class="cell-voltage">${voltage.toFixed(3)}V</span>
+                        </div>
+                    `;
                 }
-            }
-        });
-
-        // Update diff warning
-        const diffEl = document.getElementById('cellDiff');
-        if (diffEl) {
-            if (diff > 0.05) {
-                diffEl.className = 'text-red-600 dark:text-red-400 font-bold';
-            } else if (diff > 0.03) {
-                diffEl.className = 'text-yellow-600 dark:text-yellow-400 font-semibold';
-            } else {
-                diffEl.className = 'text-green-600 dark:text-green-400';
-            }
+            });
+            
+            gridHtml += '</div>';
+            cellGrid.innerHTML = gridHtml;
         }
     }
 

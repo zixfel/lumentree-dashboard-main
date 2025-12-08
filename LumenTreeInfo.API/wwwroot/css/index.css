@@ -454,6 +454,107 @@ canvas:hover {
 }
 
 /* ========================================
+   BATTERY ICON WITH FILL
+   ======================================== */
+
+.battery-icon-container {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    position: relative;
+}
+
+.battery-fill {
+    transition: height 0.5s ease;
+}
+
+.battery-percent-large {
+    font-size: 10px;
+    font-weight: 800;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+}
+
+@media (min-width: 640px) {
+    .battery-percent-large {
+        font-size: 11px;
+    }
+}
+
+/* ========================================
+   CELL GRID RESPONSIVE
+   ======================================== */
+
+#cellGrid .grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+}
+
+@media (min-width: 640px) {
+    #cellGrid .grid {
+        grid-template-columns: repeat(8, 1fr);
+        gap: 8px;
+    }
+}
+
+.cell-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 4px;
+    border-radius: 8px;
+    min-height: 50px;
+    transition: all 0.3s ease;
+}
+
+.cell-item .cell-label {
+    font-size: 9px;
+    font-weight: 600;
+    opacity: 0.8;
+}
+
+.cell-item .cell-voltage {
+    font-size: 11px;
+    font-weight: 700;
+    font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+}
+
+@media (min-width: 640px) {
+    .cell-item {
+        min-height: 60px;
+        padding: 8px 6px;
+    }
+    
+    .cell-item .cell-label {
+        font-size: 10px;
+    }
+    
+    .cell-item .cell-voltage {
+        font-size: 12px;
+    }
+}
+
+/* Cell colors */
+.cell-good {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+}
+
+.cell-ok {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: white;
+}
+
+.cell-warning {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: white;
+}
+
+.cell-default {
+    background: linear-gradient(135deg, #6b7280, #4b5563);
+    color: white;
+}
+
+/* ========================================
    PRINT STYLES
    ======================================== */
 
