@@ -1,6 +1,6 @@
 /**
  * Solar Monitor - Custom CSS
- * Version: 08016 - LightEarth Branding + Cyan-Violet-Pink Theme
+ * Version: 08019 - Renamed labels + Day max voltage
  */
 
 /* ========================================
@@ -116,22 +116,66 @@ canvas:hover {
 }
 
 /* ========================================
-   VALUE UPDATE ANIMATION
+   VALUE UPDATE ANIMATION - Enhanced Blink Effect
    ======================================== */
 
 .value-updated {
-    animation: valueFlash 0.3s ease;
+    animation: valueFlash 0.6s ease-out;
 }
 
 @keyframes valueFlash {
     0% { 
-        background-color: rgba(245, 158, 11, 0.3);
+        background-color: rgba(139, 92, 246, 0.5);
+        transform: scale(1.05);
+        text-shadow: 0 0 8px rgba(139, 92, 246, 0.8);
+    }
+    50% {
+        background-color: rgba(139, 92, 246, 0.3);
         transform: scale(1.02);
     }
     100% { 
         background-color: transparent;
         transform: scale(1);
+        text-shadow: none;
     }
+}
+
+/* Cell value blink effect */
+.cell-blink {
+    animation: cellBlink 0.6s ease-out;
+}
+
+@keyframes cellBlink {
+    0% { 
+        box-shadow: 0 0 12px rgba(139, 92, 246, 0.8);
+        transform: scale(1.05);
+    }
+    50% {
+        box-shadow: 0 0 6px rgba(139, 92, 246, 0.5);
+    }
+    100% { 
+        box-shadow: none;
+        transform: scale(1);
+    }
+}
+
+/* Battery communication status */
+.cell-no-communication {
+    opacity: 0.4;
+    background: linear-gradient(135deg, #6b7280, #4b5563) !important;
+}
+
+.cell-no-communication .cell-voltage {
+    color: #9ca3af !important;
+}
+
+.cell-no-communication::after {
+    content: '⚠';
+    position: absolute;
+    top: 2px;
+    right: 4px;
+    font-size: 10px;
+    color: #ef4444;
 }
 
 /* ========================================

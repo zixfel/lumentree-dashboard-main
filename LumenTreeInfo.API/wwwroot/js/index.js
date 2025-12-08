@@ -1,12 +1,12 @@
 /**
  * Solar Monitor - Frontend JavaScript
- * Version: 08014 - Dark Blue Cards + Renamed Labels (Pin Lưu Trữ, Điện Dự Phòng)
+ * Version: 08019 - Renamed labels + Day max voltage
  * 
  * Features:
  * - Real-time data via SignalR
- * - Battery Cell monitoring (16 cells)
+ * - Battery Cell monitoring (16 cells) with Day Max voltage
  * - SOC (State of Charge) Chart
- * - Energy flow visualization
+ * - Energy flow visualization with blink effect on value change
  * - Chart.js visualizations
  * - Mobile optimized interface
  * - Grouped summary cards (PV+Load, Pin Lưu Trữ, Grid+Điện Dự Phòng)
@@ -60,6 +60,11 @@ document.addEventListener('DOMContentLoaded', function () {
     // SOC History for real-time chart
     let socHistory = [];
     const MAX_SOC_HISTORY = 288; // 24 hours * 12 (5-min intervals)
+    
+    // Store previous values for blink detection
+    let previousValues = {};
+    let previousCellValues = {};
+    let lastCellUpdateTime = 0;
 
     // ========================================
     // EVENT LISTENERS
@@ -420,29 +425,23 @@ document.addEventListener('DOMContentLoaded', function () {
     // ========================================
     
     function updateRealTimeDisplay(data) {
-        // PV
+        // PV - with blink effect
         updateValue('pv-power', `${data.pvTotalPower}W`);
         if (data.pv2Power) {
-            const pvDesc = document.getElementById('pv-desc');
-            if (pvDesc) {
-                pvDesc.innerHTML = `<span class="text-amber-500">${data.pv1Power}W</span> <span class="text-xs text-gray-500">${data.pv1Voltage}V</span> | <span class="text-amber-600">${data.pv2Power}W</span> <span class="text-xs text-gray-500">${data.pv2Voltage}V</span>`;
-            }
+            updateValueHTML('pv-desc', `<span class="text-amber-500">${data.pv1Power}W</span> <span class="text-xs text-gray-500">${data.pv1Voltage}V</span> | <span class="text-amber-600">${data.pv2Power}W</span> <span class="text-xs text-gray-500">${data.pv2Voltage}V</span>`);
         } else {
             updateValue('pv-desc', `${data.pv1Voltage}V`);
         }
 
-        // Grid
+        // Grid - with blink effect
         updateValue('grid-power', `${data.gridValue}W`);
         updateValue('grid-voltage', `${data.gridVoltageValue}V`);
 
         // Battery
         const batteryPercent = data.batteryPercent || 0;
         
-        // Update battery percent display in icon
-        const batteryPercentIcon = document.getElementById('battery-percent-icon');
-        if (batteryPercentIcon) {
-            batteryPercentIcon.textContent = `${batteryPercent}%`;
-        }
+        // Update battery percent display in icon - with blink
+        updateValue('battery-percent-icon', `${batteryPercent}%`);
         
         // Update battery fill level
         const batteryFill = document.getElementById('battery-fill');
@@ -458,28 +457,23 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
         
-        // Update battery status text
-        const batteryStatusText = document.getElementById('battery-status-text');
-        if (batteryStatusText) {
-            if (data.batteryStatus === "Discharging") {
-                batteryStatusText.innerHTML = `<span class="text-red-500">Đang xả</span>`;
-            } else if (data.batteryStatus === "Charging") {
-                batteryStatusText.innerHTML = `<span class="text-green-500">Đang sạc</span>`;
-            } else {
-                batteryStatusText.innerHTML = `<span class="text-slate-500">Chờ</span>`;
-            }
+        // Update battery status text - with blink
+        if (data.batteryStatus === "Discharging") {
+            updateValueHTML('battery-status-text', `<span class="text-red-500">Đang xả</span>`);
+        } else if (data.batteryStatus === "Charging") {
+            updateValueHTML('battery-status-text', `<span class="text-green-500">Đang sạc</span>`);
+        } else {
+            updateValueHTML('battery-status-text', `<span class="text-slate-500">Chờ</span>`);
         }
         
-        const batteryPower = document.getElementById('battery-power');
-        if (batteryPower) {
-            if (data.batteryStatus === "Discharging") {
-                batteryPower.innerHTML = `<span class="text-red-600 dark:text-red-400">-${Math.abs(data.batteryValue)}W</span>`;
-            } else {
-                batteryPower.innerHTML = `<span class="text-green-600 dark:text-green-400">+${Math.abs(data.batteryValue)}W</span>`;
-            }
+        // Battery power - with blink
+        if (data.batteryStatus === "Discharging") {
+            updateValueHTML('battery-power', `<span class="text-red-600 dark:text-red-400">-${Math.abs(data.batteryValue)}W</span>`);
+        } else {
+            updateValueHTML('battery-power', `<span class="text-green-600 dark:text-green-400">+${Math.abs(data.batteryValue)}W</span>`);
         }
 
-        // Other values
+        // Other values - with blink effect
         updateValue('device-temp', `${data.deviceTempValue}°C`);
         updateValue('essential-power', `${data.essentialValue}W`);
         updateValue('load-power', `${data.loadValue}W`);
@@ -496,13 +490,10 @@ document.addEventListener('DOMContentLoaded', function () {
         updateFlowStatus('essential-flow', data.essentialValue > 0);
         updateFlowStatus('load-flow', data.loadValue > 0);
         
-        // Update last refresh time
+        // Update last refresh time with blink
         const now = new Date();
         const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
-        const lastUpdateEl = document.getElementById('lastUpdateTime');
-        if (lastUpdateEl) {
-            lastUpdateEl.textContent = `Cập nhật: ${timeStr}`;
-        }
+        updateValue('lastUpdateTime', `Cập nhật: ${timeStr}`);
         
         // Update SOC history for real-time chart
         if (batteryPercent > 0) {
@@ -532,10 +523,13 @@ document.addEventListener('DOMContentLoaded', function () {
     
     function initializeBatteryCells() {
         // Initialize with placeholder values
+        updateValue('cellDayMax', '--');
         updateValue('cellAvg', '--');
         updateValue('cellMax', '--');
         updateValue('cellMin', '--');
         updateValue('cellDiffValue', '--');
+        // Reset day max tracker
+        previousValues['cellDayMax_value'] = '0';
         
         // Show placeholder in cell grid
         const cellGrid = document.getElementById('cellGrid');
@@ -587,16 +581,28 @@ document.addEventListener('DOMContentLoaded', function () {
             cellCountBadge.textContent = `${validCells.length} cell`;
         }
 
-        // Update summary
+        // Update summary with blink effect
         updateValue('cellAvg', avg.toFixed(3) + 'V');
         updateValue('cellMax', max.toFixed(3) + 'V');
         updateValue('cellMin', min.toFixed(3) + 'V');
         updateValue('cellDiffValue', diff.toFixed(3) + 'V');
         
+        // Update day max voltage from API data (if available)
+        if (data.maximumVoltage) {
+            updateValue('cellDayMax', data.maximumVoltage.toFixed(3) + 'V');
+        } else {
+            // Track max voltage during the session
+            const currentDayMax = parseFloat(previousValues['cellDayMax_value'] || '0');
+            if (max > currentDayMax) {
+                previousValues['cellDayMax_value'] = max.toString();
+                updateValue('cellDayMax', max.toFixed(3) + 'V');
+            }
+        }
+        
         // Update diff color
         const diffEl = document.getElementById('cellDiffValue');
         if (diffEl) {
-            diffEl.className = 'text-lg sm:text-2xl font-black';
+            diffEl.className = 'text-sm sm:text-lg font-black';
             if (diff > 0.05) {
                 diffEl.classList.add('text-red-600', 'dark:text-red-400');
             } else if (diff > 0.02) {
@@ -605,14 +611,35 @@ document.addEventListener('DOMContentLoaded', function () {
                 diffEl.classList.add('text-green-600', 'dark:text-green-400');
             }
         }
+        
+        // Track update time for communication status
+        const currentTime = Date.now();
+        lastCellUpdateTime = currentTime;
 
-        // Generate cell grid dynamically
+        // Generate cell grid dynamically with blink effect and communication status
         const cellGrid = document.getElementById('cellGrid');
         if (cellGrid) {
             let gridHtml = '<div class="grid">';
             
             cells.forEach((voltage, index) => {
-                if (voltage > 0) {
+                const cellKey = `cell_${index}`;
+                const prevVoltage = previousCellValues[cellKey];
+                const hasChanged = prevVoltage !== undefined && prevVoltage !== voltage;
+                previousCellValues[cellKey] = voltage;
+                
+                // Check communication status (voltage = 0 means no communication)
+                const noCommunication = voltage === 0 || voltage === null || voltage === undefined;
+                
+                if (noCommunication) {
+                    // Cell has no communication
+                    gridHtml += `
+                        <div class="cell-item cell-no-communication relative">
+                            <span class="cell-label">C${index + 1}</span>
+                            <span class="cell-voltage">N/A</span>
+                            <span class="text-[8px] text-red-400 block">Mất kết nối</span>
+                        </div>
+                    `;
+                } else {
                     const deviation = Math.abs(voltage - avg);
                     let colorClass = 'cell-default';
                     
@@ -624,8 +651,11 @@ document.addEventListener('DOMContentLoaded', function () {
                         colorClass = 'cell-warning';
                     }
                     
+                    // Add blink class if value changed
+                    const blinkClass = hasChanged ? 'cell-blink' : '';
+                    
                     gridHtml += `
-                        <div class="cell-item ${colorClass}">
+                        <div class="cell-item ${colorClass} ${blinkClass}">
                             <span class="cell-label">C${index + 1}</span>
                             <span class="cell-voltage">${voltage.toFixed(3)}V</span>
                         </div>
@@ -634,6 +664,14 @@ document.addEventListener('DOMContentLoaded', function () {
             });
             
             gridHtml += '</div>';
+            
+            // Add communication status indicator
+            const commStatus = validCells.length === cells.length ? 
+                '<span class="text-green-500">✓ Tất cả cell đang giao tiếp</span>' : 
+                `<span class="text-amber-500">⚠ ${cells.length - validCells.length} cell mất kết nối</span>`;
+            
+            gridHtml += `<div class="text-center mt-2 text-xs">${commStatus}</div>`;
+            
             cellGrid.innerHTML = gridHtml;
         }
     }
@@ -1004,9 +1042,41 @@ document.addEventListener('DOMContentLoaded', function () {
     function updateValue(elementId, value) {
         const element = document.getElementById(elementId);
         if (element) {
-            element.textContent = value;
-            element.classList.add('value-updated');
-            setTimeout(() => element.classList.remove('value-updated'), 300);
+            const oldValue = previousValues[elementId];
+            const newValue = String(value);
+            
+            // Only blink if value actually changed
+            if (oldValue !== newValue) {
+                element.textContent = value;
+                element.classList.remove('value-updated');
+                // Force reflow to restart animation
+                void element.offsetWidth;
+                element.classList.add('value-updated');
+                previousValues[elementId] = newValue;
+                
+                // Remove class after animation completes
+                setTimeout(() => element.classList.remove('value-updated'), 600);
+            }
+        }
+    }
+    
+    // Update value with innerHTML and blink effect
+    function updateValueHTML(elementId, html) {
+        const element = document.getElementById(elementId);
+        if (element) {
+            const oldHTML = previousValues[elementId + '_html'];
+            const newHTML = String(html);
+            
+            // Only blink if value actually changed
+            if (oldHTML !== newHTML) {
+                element.innerHTML = html;
+                element.classList.remove('value-updated');
+                void element.offsetWidth;
+                element.classList.add('value-updated');
+                previousValues[elementId + '_html'] = newHTML;
+                
+                setTimeout(() => element.classList.remove('value-updated'), 600);
+            }
         }
     }
 

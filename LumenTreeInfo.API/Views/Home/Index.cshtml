@@ -120,7 +120,7 @@
                     <div class="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center shadow-lg mb-1">
                         <i data-lucide="sun" class="w-5 h-5 sm:w-6 sm:h-6 text-white"></i>
                     </div>
-                    <div class="text-[10px] sm:text-xs font-medium text-amber-700 dark:text-amber-300">Pin Mặt Trời</div>
+                    <div class="text-[10px] sm:text-xs font-medium text-amber-700 dark:text-amber-300">Tấm Pin Mặt Trời</div>
                     <div class="text-sm sm:text-lg font-black text-amber-600 dark:text-amber-400" id="pv-power">--</div>
                     <div class="text-[9px] sm:text-[10px] text-slate-500" id="pv-desc">--</div>
                 </div>
@@ -142,7 +142,7 @@
                     <div class="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-purple-400 to-violet-500 rounded-xl flex items-center justify-center shadow-lg mb-1">
                         <i data-lucide="zap" class="w-5 h-5 sm:w-6 sm:h-6 text-white"></i>
                     </div>
-                    <div class="text-[10px] sm:text-xs font-medium text-purple-700 dark:text-purple-300">Lưới Điện</div>
+                    <div class="text-[10px] sm:text-xs font-medium text-purple-700 dark:text-purple-300">Lưới Điện EVN</div>
                     <div class="text-sm sm:text-lg font-black text-purple-600 dark:text-purple-400" id="grid-power">--</div>
                     <div class="text-[9px] sm:text-[10px] text-slate-500" id="grid-voltage">--</div>
                 </div>
@@ -209,22 +209,26 @@
         </div>
         
         <div id="cellSectionContent" class="p-3">
-            <div class="grid grid-cols-4 gap-2 mb-3">
+            <div class="grid grid-cols-5 gap-2 mb-3">
+                <div class="bg-gradient-to-br from-violet-100 to-purple-100 dark:from-violet-900/40 dark:to-purple-900/40 rounded-lg p-2 text-center border border-violet-200 dark:border-violet-700">
+                    <div class="text-[8px] font-bold text-violet-600 dark:text-violet-400 uppercase">Cao Nhất Ngày</div>
+                    <div class="text-sm sm:text-lg font-black text-violet-700 dark:text-violet-300" id="cellDayMax">--</div>
+                </div>
                 <div class="bg-gradient-to-br from-teal-100 to-cyan-100 dark:from-teal-900/40 dark:to-cyan-900/40 rounded-lg p-2 text-center border border-teal-200 dark:border-teal-700">
-                    <div class="text-[9px] font-bold text-teal-600 dark:text-teal-400 uppercase">Trung Bình</div>
+                    <div class="text-[8px] font-bold text-teal-600 dark:text-teal-400 uppercase">Trung Bình</div>
                     <div class="text-sm sm:text-lg font-black text-teal-700 dark:text-teal-300" id="cellAvg">--</div>
                 </div>
                 <div class="bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-900/40 dark:to-emerald-900/40 rounded-lg p-2 text-center border border-green-200 dark:border-green-700">
-                    <div class="text-[9px] font-bold text-green-600 dark:text-green-400 uppercase">Cao Nhất</div>
+                    <div class="text-[8px] font-bold text-green-600 dark:text-green-400 uppercase">Cao Nhất</div>
                     <div class="text-sm sm:text-lg font-black text-green-700 dark:text-green-300" id="cellMax">--</div>
                 </div>
                 <div class="bg-gradient-to-br from-amber-100 to-yellow-100 dark:from-amber-900/40 dark:to-yellow-900/40 rounded-lg p-2 text-center border border-amber-200 dark:border-amber-700">
-                    <div class="text-[9px] font-bold text-amber-600 dark:text-amber-400 uppercase">Thấp Nhất</div>
+                    <div class="text-[8px] font-bold text-amber-600 dark:text-amber-400 uppercase">Thấp Nhất</div>
                     <div class="text-sm sm:text-lg font-black text-amber-700 dark:text-amber-300" id="cellMin">--</div>
                 </div>
                 <div class="bg-gradient-to-br from-rose-100 to-red-100 dark:from-rose-900/40 dark:to-red-900/40 rounded-lg p-2 text-center border border-rose-200 dark:border-rose-700">
-                    <div class="text-[9px] font-bold text-rose-600 dark:text-rose-400 uppercase">Độ Lệch</div>
-                    <div class="text-lg sm:text-2xl font-black" id="cellDiffValue">--</div>
+                    <div class="text-[8px] font-bold text-rose-600 dark:text-rose-400 uppercase">Độ Lệch</div>
+                    <div class="text-sm sm:text-lg font-black" id="cellDiffValue">--</div>
                 </div>
             </div>
             
@@ -408,6 +412,6 @@
     <!-- SignalR Client Library -->
     <script src="https://unpkg.com/@@microsoft/signalr@@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link href="~/css/index.css?v=08016" rel="stylesheet" />
-    <script src="~/js/index.js?v=08016"></script>
+    <link href="~/css/index.css?v=08019" rel="stylesheet" />
+    <script src="~/js/index.js?v=08019"></script>
 }
