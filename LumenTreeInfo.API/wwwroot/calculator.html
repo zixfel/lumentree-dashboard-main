@@ -5,16 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tính Toán Tiết Kiệm Điện Mặt Trời</title>
     
-    <!-- PWA Meta Tags -->
+    <!-- Meta Tags -->
     <meta name="description" content="Ứng dụng tính toán và theo dõi hiệu quả tiết kiệm chi phí từ hệ thống năng lượng mặt trời">
     <meta name="theme-color" content="#4ade80">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Solar Calculator">
+    <!-- PWA disabled - use browser shortcut instead -->
+    <!-- <meta name="mobile-web-app-capable" content="yes"> -->
+    <!-- <meta name="apple-mobile-web-app-capable" content="yes"> -->
+    <!-- <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"> -->
+    <!-- <meta name="apple-mobile-web-app-title" content="Solar Calculator"> -->
     
-    <!-- PWA Manifest -->
-    <link rel="manifest" href="/manifest.json">
+    <!-- PWA Manifest disabled -->
+    <!-- <link rel="manifest" href="/manifest.json"> -->
     
     <!-- Icons for iOS -->
     <link rel="apple-touch-icon" sizes="152x152" href="/icon-152x152.png">
@@ -4595,59 +4596,13 @@
         });
     </script>
     
-    <!-- PWA Service Worker Registration -->
+    <!-- PWA disabled - use browser shortcut instead -->
+    <!--
     <script>
-        // Register Service Worker for offline support
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/service-worker.js')
-                    .then(registration => {
-                        console.log('✅ Service Worker registered successfully:', registration.scope);
-                        
-                        // Check for updates periodically
-                        setInterval(() => {
-                            registration.update();
-                        }, 60000); // Check every minute
-                    })
-                    .catch(error => {
-                        console.log('❌ Service Worker registration failed:', error);
-                    });
-            });
-            
-            // Handle Service Worker updates
-            let refreshing = false;
-            navigator.serviceWorker.addEventListener('controllerchange', () => {
-                if (!refreshing) {
-                    refreshing = true;
-                    window.location.reload();
-                }
-            });
-        }
-        
-        // PWA Install prompt (optional - for "Add to Home Screen")
-        let deferredPrompt;
-        window.addEventListener('beforeinstallprompt', (e) => {
-            // Prevent the mini-infobar from appearing on mobile
-            e.preventDefault();
-            // Stash the event so it can be triggered later
-            deferredPrompt = e;
-            console.log('💡 PWA can be installed!');
-            
-            // Optionally, show a custom install button
-            // You can add a button in your UI and trigger:
-            // deferredPrompt.prompt();
-            // deferredPrompt.userChoice.then((choiceResult) => {
-            //   if (choiceResult.outcome === 'accepted') {
-            //     console.log('User accepted the install prompt');
-            //   }
-            // });
-        });
-        
-        // Detect if app is installed
-        window.addEventListener('appinstalled', (evt) => {
-            console.log('✅ App installed successfully!');
-        });
+        // Service Worker and PWA functionality disabled
+        // Users can add to home screen as a regular browser shortcut
     </script>
+    -->
     
     <!-- Lumentree Sync Modal -->
     <div id="lumentreeModal" class="modal">
