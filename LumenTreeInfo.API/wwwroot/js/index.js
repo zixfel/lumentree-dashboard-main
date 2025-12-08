@@ -1,6 +1,6 @@
 /**
  * Solar Monitor - Frontend JavaScript
- * Version: 08013 - Grouped Summary Cards + Hide Hero on Load + Fixed Calculate Button
+ * Version: 08014 - Dark Blue Cards + Renamed Labels (Pin Lưu Trữ, Điện Dự Phòng)
  * 
  * Features:
  * - Real-time data via SignalR
@@ -9,9 +9,9 @@
  * - Energy flow visualization
  * - Chart.js visualizations
  * - Mobile optimized interface
- * - Grouped summary cards (PV+Load, Battery, Grid+ACOut)
+ * - Grouped summary cards (PV+Load, Pin Lưu Trữ, Grid+Điện Dự Phòng)
  * - Auto-hide hero section after data load
- * - Fixed calculate savings button
+ * - Calculate savings button after edit button
  */
 
 document.addEventListener('DOMContentLoaded', function () {
