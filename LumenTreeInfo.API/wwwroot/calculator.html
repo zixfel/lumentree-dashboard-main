@@ -1,0 +1,1202 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Tính Toán Tiết Kiệm Điện Mặt Trời</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#f59e0b">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        solar: {
+                            50: '#fffbeb',
+                            100: '#fef3c7',
+                            200: '#fde68a',
+                            300: '#fcd34d',
+                            400: '#fbbf24',
+                            500: '#f59e0b',
+                            600: '#d97706',
+                            700: '#b45309',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .gradient-solar {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+        
+        .tab-btn {
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+        }
+        
+        .tab-btn.active {
+            border-bottom-color: #f59e0b;
+            color: #f59e0b;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .dark .card {
+            background: #1f2937;
+        }
+        
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        }
+        
+        .summary-card {
+            background: linear-gradient(135deg, var(--card-color-start), var(--card-color-end));
+            color: white;
+            border-radius: 16px;
+            padding: 20px;
+        }
+        
+        .input-field {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+        
+        .input-field:focus {
+            outline: none;
+            border-color: #f59e0b;
+            box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
+        }
+        
+        .dark .input-field {
+            background: #374151;
+            border-color: #4b5563;
+            color: white;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+        }
+        
+        .btn-secondary {
+            background: #f3f4f6;
+            color: #374151;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .dark .btn-secondary {
+            background: #374151;
+            color: #e5e7eb;
+        }
+        
+        .btn-secondary:hover {
+            background: #e5e7eb;
+        }
+        
+        .dark .btn-secondary:hover {
+            background: #4b5563;
+        }
+        
+        .month-card {
+            border-radius: 12px;
+            padding: 16px;
+            background: white;
+            border: 1px solid #e5e7eb;
+        }
+        
+        .dark .month-card {
+            background: #1f2937;
+            border-color: #374151;
+        }
+        
+        .loading-spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #f59e0b;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .progress-bar {
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #f59e0b, #d97706);
+            transition: width 0.5s ease;
+        }
+        
+        /* Chart container */
+        .chart-container {
+            position: relative;
+            height: 300px;
+        }
+        
+        @media (max-width: 640px) {
+            .chart-container {
+                height: 250px;
+            }
+        }
+        
+        /* Notification */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 16px 24px;
+            border-radius: 12px;
+            color: white;
+            font-weight: 500;
+            z-index: 9999;
+            transform: translateX(120%);
+            transition: transform 0.3s ease;
+        }
+        
+        .notification.show {
+            transform: translateX(0);
+        }
+        
+        .notification.success {
+            background: #10b981;
+        }
+        
+        .notification.error {
+            background: #ef4444;
+        }
+        
+        .notification.info {
+            background: #3b82f6;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 min-h-screen">
+    <!-- Notification -->
+    <div id="notification" class="notification">
+        <span id="notificationText"></span>
+    </div>
+
+    <!-- Header -->
+    <header class="gradient-solar shadow-lg sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                        <i data-lucide="calculator" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold text-white">Tính Toán Tiết Kiệm</h1>
+                        <p class="text-xs text-white/70">Solar Savings Calculator</p>
+                    </div>
+                </div>
+                
+                <button id="themeToggle" class="w-10 h-10 bg-white/20 hover:bg-white/30 rounded-xl flex items-center justify-center transition-all">
+                    <i data-lucide="moon" class="w-5 h-5 text-white dark:hidden"></i>
+                    <i data-lucide="sun" class="w-5 h-5 text-white hidden dark:block"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-6 max-w-4xl">
+        <!-- Summary Cards -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div class="summary-card" style="--card-color-start: #10b981; --card-color-end: #059669;">
+                <div class="text-sm opacity-80 mb-1">Tổng Tiết Kiệm</div>
+                <div id="totalSavings" class="text-2xl font-bold">0 ₫</div>
+            </div>
+            <div class="summary-card" style="--card-color-start: #f59e0b; --card-color-end: #d97706;">
+                <div class="text-sm opacity-80 mb-1">Sản Lượng PV</div>
+                <div id="totalPV" class="text-2xl font-bold">0 kWh</div>
+            </div>
+            <div class="summary-card" style="--card-color-start: #3b82f6; --card-color-end: #2563eb;">
+                <div class="text-sm opacity-80 mb-1">Tổng Tải</div>
+                <div id="totalLoad" class="text-2xl font-bold">0 kWh</div>
+            </div>
+            <div class="summary-card" style="--card-color-start: #8b5cf6; --card-color-end: #7c3aed;">
+                <div class="text-sm opacity-80 mb-1">Điện Lưới</div>
+                <div id="totalGrid" class="text-2xl font-bold">0 kWh</div>
+            </div>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="flex border-b border-gray-200 dark:border-gray-700 mb-6">
+            <button class="tab-btn active px-4 py-3 font-medium" data-tab="dashboard">
+                <i data-lucide="layout-dashboard" class="w-4 h-4 inline mr-2"></i>
+                Dashboard
+            </button>
+            <button class="tab-btn px-4 py-3 font-medium" data-tab="lumentree">
+                <i data-lucide="cloud-download" class="w-4 h-4 inline mr-2"></i>
+                Lumentree
+            </button>
+            <button class="tab-btn px-4 py-3 font-medium" data-tab="manual">
+                <i data-lucide="edit-3" class="w-4 h-4 inline mr-2"></i>
+                Thủ Công
+            </button>
+        </div>
+
+        <!-- Dashboard Tab -->
+        <div id="tab-dashboard" class="tab-content active">
+            <div class="card p-6 mb-6">
+                <h3 class="text-lg font-semibold mb-4">Lấy Dữ Liệu Từ Dashboard</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Device ID</label>
+                        <input type="text" id="dashboardDeviceId" class="input-field" placeholder="P250801055">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Từ Ngày</label>
+                        <input type="date" id="dashboardFromDate" class="input-field">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Đến Ngày</label>
+                        <input type="date" id="dashboardToDate" class="input-field">
+                    </div>
+                </div>
+                
+                <button id="fetchDashboardData" class="btn-primary w-full md:w-auto">
+                    <i data-lucide="download" class="w-4 h-4 inline mr-2"></i>
+                    Lấy Dữ Liệu
+                </button>
+                
+                <div id="dashboardLoading" class="hidden mt-4 flex items-center gap-2 text-gray-500">
+                    <div class="loading-spinner"></div>
+                    <span>Đang tải dữ liệu...</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lumentree Tab -->
+        <div id="tab-lumentree" class="tab-content">
+            <div class="card p-6 mb-6">
+                <h3 class="text-lg font-semibold mb-4">Đồng Bộ Từ Lumentree.net</h3>
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium mb-2">Device ID</label>
+                    <input type="text" id="lumentreeDeviceId" class="input-field" placeholder="P250801055">
+                </div>
+                
+                <div class="flex gap-2 mb-4">
+                    <button id="fetchLumentreeData" class="btn-primary flex-1">
+                        <i data-lucide="refresh-cw" class="w-4 h-4 inline mr-2"></i>
+                        Tự Động Lấy
+                    </button>
+                    <button id="openLumentreeAPI" class="btn-secondary flex-1">
+                        <i data-lucide="external-link" class="w-4 h-4 inline mr-2"></i>
+                        Mở API
+                    </button>
+                </div>
+                
+                <div id="lumentreeLoading" class="hidden mt-4 flex items-center gap-2 text-gray-500">
+                    <div class="loading-spinner"></div>
+                    <span>Đang tải từ Lumentree...</span>
+                </div>
+                
+                <div class="mt-4">
+                    <label class="block text-sm font-medium mb-2">Hoặc Paste JSON:</label>
+                    <textarea id="lumentreeJson" class="input-field h-32" placeholder='Paste JSON từ API...'></textarea>
+                    <button id="parseLumentreeJson" class="btn-secondary mt-2">
+                        <i data-lucide="file-json" class="w-4 h-4 inline mr-2"></i>
+                        Parse JSON
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Manual Tab -->
+        <div id="tab-manual" class="tab-content">
+            <div class="card p-6 mb-6">
+                <h3 class="text-lg font-semibold mb-4">Nhập Dữ Liệu Thủ Công</h3>
+                
+                <div id="monthInputs" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Month inputs will be generated here -->
+                </div>
+                
+                <div class="flex gap-2 mt-4">
+                    <button id="addMonth" class="btn-secondary">
+                        <i data-lucide="plus" class="w-4 h-4 inline mr-2"></i>
+                        Thêm Tháng
+                    </button>
+                    <button id="calculateManual" class="btn-primary">
+                        <i data-lucide="calculator" class="w-4 h-4 inline mr-2"></i>
+                        Tính Toán
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div id="resultsSection" class="hidden">
+            <!-- Quick Stats -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div class="card p-4 text-center">
+                    <div class="text-sm text-gray-500 mb-1">Trung Bình/Ngày</div>
+                    <div id="avgDaily" class="text-xl font-bold text-green-600">0 ₫</div>
+                </div>
+                <div class="card p-4 text-center">
+                    <div class="text-sm text-gray-500 mb-1">Trung Bình/Tháng</div>
+                    <div id="avgMonthly" class="text-xl font-bold text-green-600">0 ₫</div>
+                </div>
+                <div class="card p-4 text-center">
+                    <div class="text-sm text-gray-500 mb-1">Tự Cung Tự Cấp</div>
+                    <div id="selfSufficiency" class="text-xl font-bold text-blue-600">0%</div>
+                </div>
+                <div class="card p-4 text-center">
+                    <div class="text-sm text-gray-500 mb-1">Số Tháng</div>
+                    <div id="monthCount" class="text-xl font-bold">0</div>
+                </div>
+            </div>
+
+            <!-- ROI Calculator -->
+            <div class="card p-6 mb-6">
+                <h3 class="text-lg font-semibold mb-4">
+                    <i data-lucide="trending-up" class="w-5 h-5 inline mr-2"></i>
+                    Tính Hoàn Vốn (ROI)
+                </h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Chi Phí Lắp Đặt (VNĐ)</label>
+                        <input type="number" id="installCost" class="input-field" placeholder="80000000" value="80000000">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Giá Điện EVN (₫/kWh)</label>
+                        <input type="number" id="evnPrice" class="input-field" placeholder="3000" value="3000">
+                    </div>
+                </div>
+                
+                <button id="calculateROI" class="btn-primary">
+                    <i data-lucide="calculator" class="w-4 h-4 inline mr-2"></i>
+                    Tính ROI
+                </button>
+                
+                <div id="roiResults" class="mt-4 hidden">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-green-50 dark:bg-green-900/20 p-4 rounded-xl">
+                            <div class="text-sm text-gray-600 dark:text-gray-400">Thời Gian Hoàn Vốn</div>
+                            <div id="paybackPeriod" class="text-2xl font-bold text-green-600">-- năm</div>
+                        </div>
+                        <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl">
+                            <div class="text-sm text-gray-600 dark:text-gray-400">ROI Hàng Năm</div>
+                            <div id="annualROI" class="text-2xl font-bold text-blue-600">--%</div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <div class="flex justify-between text-sm mb-1">
+                            <span>Tiến Độ Hoàn Vốn</span>
+                            <span id="roiProgress">0%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div id="roiProgressBar" class="progress-fill" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts -->
+            <div class="card p-6 mb-6">
+                <h3 class="text-lg font-semibold mb-4">
+                    <i data-lucide="bar-chart-2" class="w-5 h-5 inline mr-2"></i>
+                    Biểu Đồ Theo Tháng
+                </h3>
+                <div class="chart-container">
+                    <canvas id="monthlyChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Savings Chart -->
+            <div class="card p-6 mb-6">
+                <h3 class="text-lg font-semibold mb-4">
+                    <i data-lucide="piggy-bank" class="w-5 h-5 inline mr-2"></i>
+                    Tiết Kiệm Tích Lũy
+                </h3>
+                <div class="chart-container">
+                    <canvas id="savingsChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Monthly Details -->
+            <div class="card p-6">
+                <h3 class="text-lg font-semibold mb-4">
+                    <i data-lucide="list" class="w-5 h-5 inline mr-2"></i>
+                    Chi Tiết Theo Tháng
+                </h3>
+                <div id="monthlyDetails" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Monthly details will be generated here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Save/Load Section -->
+        <div class="card p-6 mt-6">
+            <h3 class="text-lg font-semibold mb-4">
+                <i data-lucide="save" class="w-5 h-5 inline mr-2"></i>
+                Lưu & Tải Dữ Liệu
+            </h3>
+            <div class="flex flex-wrap gap-2">
+                <button id="saveData" class="btn-secondary">
+                    <i data-lucide="download" class="w-4 h-4 inline mr-2"></i>
+                    Lưu
+                </button>
+                <button id="loadData" class="btn-secondary">
+                    <i data-lucide="upload" class="w-4 h-4 inline mr-2"></i>
+                    Tải
+                </button>
+                <button id="exportCSV" class="btn-secondary">
+                    <i data-lucide="file-spreadsheet" class="w-4 h-4 inline mr-2"></i>
+                    Xuất CSV
+                </button>
+                <button id="clearData" class="btn-secondary text-red-600">
+                    <i data-lucide="trash-2" class="w-4 h-4 inline mr-2"></i>
+                    Xóa
+                </button>
+            </div>
+            <input type="file" id="fileInput" class="hidden" accept=".json">
+        </div>
+    </main>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+        
+        // ========================================
+        // GLOBAL STATE
+        // ========================================
+        
+        let monthlyData = [];
+        let monthlyChart = null;
+        let savingsChart = null;
+        
+        // EVN Price (default)
+        const EVN_PRICE = 3000; // VND per kWh
+        
+        // ========================================
+        // INITIALIZATION
+        // ========================================
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            // Theme toggle
+            const themeToggle = document.getElementById('themeToggle');
+            const html = document.documentElement;
+            
+            if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                html.classList.add('dark');
+            }
+            
+            themeToggle.addEventListener('click', () => {
+                html.classList.toggle('dark');
+                localStorage.theme = html.classList.contains('dark') ? 'dark' : 'light';
+            });
+            
+            // Tab navigation
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+            });
+            
+            // Get deviceId from URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const deviceId = urlParams.get('deviceId');
+            if (deviceId) {
+                document.getElementById('dashboardDeviceId').value = deviceId;
+                document.getElementById('lumentreeDeviceId').value = deviceId;
+            }
+            
+            // Set default dates
+            const today = new Date();
+            const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+            document.getElementById('dashboardToDate').value = formatDate(today);
+            document.getElementById('dashboardFromDate').value = formatDate(new Date(today.getFullYear(), today.getMonth() - 3, 1));
+            
+            // Event listeners
+            document.getElementById('fetchDashboardData').addEventListener('click', fetchFromDashboard);
+            document.getElementById('fetchLumentreeData').addEventListener('click', fetchFromLumentree);
+            document.getElementById('openLumentreeAPI').addEventListener('click', openLumentreeAPI);
+            document.getElementById('parseLumentreeJson').addEventListener('click', parseLumentreeJson);
+            document.getElementById('addMonth').addEventListener('click', addManualMonth);
+            document.getElementById('calculateManual').addEventListener('click', calculateFromManual);
+            document.getElementById('calculateROI').addEventListener('click', calculateROI);
+            document.getElementById('saveData').addEventListener('click', saveData);
+            document.getElementById('loadData').addEventListener('click', () => document.getElementById('fileInput').click());
+            document.getElementById('fileInput').addEventListener('change', loadData);
+            document.getElementById('exportCSV').addEventListener('click', exportCSV);
+            document.getElementById('clearData').addEventListener('click', clearData);
+            
+            // Load saved data
+            loadFromLocalStorage();
+            
+            // Add initial manual month inputs
+            addManualMonth();
+        });
+        
+        // ========================================
+        // TAB NAVIGATION
+        // ========================================
+        
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.tab === tabName);
+            });
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.toggle('active', content.id === `tab-${tabName}`);
+            });
+        }
+        
+        // ========================================
+        // DASHBOARD DATA FETCH
+        // ========================================
+        
+        async function fetchFromDashboard() {
+            const deviceId = document.getElementById('dashboardDeviceId').value.trim();
+            const fromDate = document.getElementById('dashboardFromDate').value;
+            const toDate = document.getElementById('dashboardToDate').value;
+            
+            if (!deviceId) {
+                showNotification('Vui lòng nhập Device ID', 'error');
+                return;
+            }
+            
+            const loading = document.getElementById('dashboardLoading');
+            loading.classList.remove('hidden');
+            
+            try {
+                const start = new Date(fromDate);
+                const end = new Date(toDate);
+                const monthsData = [];
+                
+                // Fetch data for each day and aggregate by month
+                const dailyData = {};
+                
+                for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+                    const dateStr = formatDate(d);
+                    const monthKey = dateStr.substring(0, 7); // YYYY-MM
+                    
+                    try {
+                        const response = await fetch(`/device/${deviceId}?date=${dateStr}`);
+                        if (response.ok) {
+                            const data = await response.json();
+                            
+                            if (!dailyData[monthKey]) {
+                                dailyData[monthKey] = { load: 0, grid: 0, pv: 0, days: 0 };
+                            }
+                            
+                            dailyData[monthKey].load += data.load.tableValue / 10;
+                            dailyData[monthKey].grid += data.grid.tableValue / 10;
+                            dailyData[monthKey].pv += data.pv.tableValue / 10;
+                            dailyData[monthKey].days++;
+                        }
+                    } catch (e) {
+                        console.log(`No data for ${dateStr}`);
+                    }
+                }
+                
+                // Convert to monthly data array
+                monthlyData = Object.keys(dailyData).sort().map(month => ({
+                    month: month,
+                    load: Math.round(dailyData[month].load * 10) / 10,
+                    grid: Math.round(dailyData[month].grid * 10) / 10,
+                    pv: Math.round(dailyData[month].pv * 10) / 10,
+                    days: dailyData[month].days
+                }));
+                
+                if (monthlyData.length > 0) {
+                    calculateAndDisplay();
+                    showNotification(`Đã tải ${monthlyData.length} tháng dữ liệu`, 'success');
+                } else {
+                    showNotification('Không có dữ liệu trong khoảng thời gian này', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showNotification('Lỗi tải dữ liệu: ' + error.message, 'error');
+            } finally {
+                loading.classList.add('hidden');
+            }
+        }
+        
+        // ========================================
+        // LUMENTREE DATA FETCH
+        // ========================================
+        
+        async function fetchFromLumentree() {
+            const deviceId = document.getElementById('lumentreeDeviceId').value.trim();
+            
+            if (!deviceId) {
+                showNotification('Vui lòng nhập Device ID', 'error');
+                return;
+            }
+            
+            const loading = document.getElementById('lumentreeLoading');
+            loading.classList.remove('hidden');
+            
+            // List of CORS proxies to try
+            const proxies = [
+                { name: 'codetabs', url: 'https://api.codetabs.com/v1/proxy?quest=' },
+                { name: 'corsproxy', url: 'https://corsproxy.io/?' },
+                { name: 'allorigins', url: 'https://api.allorigins.win/raw?url=' }
+            ];
+            
+            const apiUrl = `https://lumentree.net/api/monthly/${deviceId}`;
+            
+            for (const proxy of proxies) {
+                try {
+                    showNotification(`Đang thử ${proxy.name}...`, 'info');
+                    
+                    const response = await fetch(proxy.url + encodeURIComponent(apiUrl), {
+                        signal: AbortSignal.timeout(10000)
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        processLumentreeData(data);
+                        loading.classList.add('hidden');
+                        return;
+                    }
+                } catch (e) {
+                    console.log(`${proxy.name} failed:`, e.message);
+                }
+            }
+            
+            loading.classList.add('hidden');
+            showNotification('Không thể tự động lấy dữ liệu. Vui lòng sử dụng "Mở API" và paste JSON.', 'error');
+        }
+        
+        function openLumentreeAPI() {
+            const deviceId = document.getElementById('lumentreeDeviceId').value.trim() || 'P250801055';
+            window.open(`https://lumentree.net/api/monthly/${deviceId}`, '_blank');
+        }
+        
+        function parseLumentreeJson() {
+            const jsonText = document.getElementById('lumentreeJson').value.trim();
+            
+            if (!jsonText) {
+                showNotification('Vui lòng paste JSON data', 'error');
+                return;
+            }
+            
+            try {
+                const data = JSON.parse(jsonText);
+                processLumentreeData(data);
+            } catch (e) {
+                showNotification('JSON không hợp lệ: ' + e.message, 'error');
+            }
+        }
+        
+        function processLumentreeData(data) {
+            if (!data || !Array.isArray(data)) {
+                showNotification('Dữ liệu không hợp lệ', 'error');
+                return;
+            }
+            
+            monthlyData = data
+                .filter(item => item.load > 0 || item.pv > 0)
+                .map(item => ({
+                    month: item.month,
+                    load: item.load || 0,
+                    grid: item.grid || 0,
+                    pv: item.pv || 0
+                }))
+                .sort((a, b) => a.month.localeCompare(b.month));
+            
+            if (monthlyData.length > 0) {
+                calculateAndDisplay();
+                showNotification(`Đã xử lý ${monthlyData.length} tháng dữ liệu`, 'success');
+            } else {
+                showNotification('Không có dữ liệu hợp lệ', 'error');
+            }
+        }
+        
+        // ========================================
+        // MANUAL DATA ENTRY
+        // ========================================
+        
+        let manualMonthCount = 0;
+        
+        function addManualMonth() {
+            const container = document.getElementById('monthInputs');
+            const monthIndex = manualMonthCount++;
+            
+            const today = new Date();
+            const defaultMonth = new Date(today.getFullYear(), today.getMonth() - monthIndex, 1);
+            const monthStr = formatDate(defaultMonth).substring(0, 7);
+            
+            const div = document.createElement('div');
+            div.className = 'month-card';
+            div.innerHTML = `
+                <div class="flex justify-between items-center mb-3">
+                    <input type="month" class="input-field month-input" value="${monthStr}">
+                    <button class="text-red-500 hover:text-red-700" onclick="this.parentElement.parentElement.remove()">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+                <div class="grid grid-cols-3 gap-2">
+                    <div>
+                        <label class="text-xs text-gray-500">Load (kWh)</label>
+                        <input type="number" class="input-field load-input" placeholder="0">
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-500">Grid (kWh)</label>
+                        <input type="number" class="input-field grid-input" placeholder="0">
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-500">PV (kWh)</label>
+                        <input type="number" class="input-field pv-input" placeholder="0">
+                    </div>
+                </div>
+            `;
+            
+            container.appendChild(div);
+            lucide.createIcons();
+        }
+        
+        function calculateFromManual() {
+            const monthCards = document.querySelectorAll('#monthInputs .month-card');
+            monthlyData = [];
+            
+            monthCards.forEach(card => {
+                const month = card.querySelector('.month-input').value;
+                const load = parseFloat(card.querySelector('.load-input').value) || 0;
+                const grid = parseFloat(card.querySelector('.grid-input').value) || 0;
+                const pv = parseFloat(card.querySelector('.pv-input').value) || 0;
+                
+                if (month && (load > 0 || pv > 0)) {
+                    monthlyData.push({ month, load, grid, pv });
+                }
+            });
+            
+            if (monthlyData.length > 0) {
+                monthlyData.sort((a, b) => a.month.localeCompare(b.month));
+                calculateAndDisplay();
+                showNotification('Đã tính toán xong', 'success');
+            } else {
+                showNotification('Vui lòng nhập ít nhất 1 tháng dữ liệu', 'error');
+            }
+        }
+        
+        // ========================================
+        // CALCULATIONS
+        // ========================================
+        
+        function calculateAndDisplay() {
+            if (monthlyData.length === 0) return;
+            
+            const evnPrice = parseFloat(document.getElementById('evnPrice').value) || EVN_PRICE;
+            
+            // Calculate totals
+            let totalLoad = 0, totalGrid = 0, totalPV = 0, totalSavings = 0;
+            let cumulativeSavings = [];
+            
+            monthlyData.forEach((item, index) => {
+                totalLoad += item.load;
+                totalGrid += item.grid;
+                totalPV += item.pv;
+                
+                // Savings = PV produced - Grid used (simplified)
+                const savings = (item.pv - item.grid) * evnPrice;
+                item.savings = savings;
+                totalSavings += savings;
+                
+                cumulativeSavings.push({
+                    month: item.month,
+                    savings: totalSavings
+                });
+            });
+            
+            // Update summary
+            document.getElementById('totalSavings').textContent = formatCurrency(totalSavings);
+            document.getElementById('totalPV').textContent = totalPV.toFixed(1) + ' kWh';
+            document.getElementById('totalLoad').textContent = totalLoad.toFixed(1) + ' kWh';
+            document.getElementById('totalGrid').textContent = totalGrid.toFixed(1) + ' kWh';
+            
+            // Calculate averages
+            const daysCount = monthlyData.length * 30;
+            const avgDaily = totalSavings / daysCount;
+            const avgMonthly = totalSavings / monthlyData.length;
+            const selfSufficiency = totalLoad > 0 ? ((totalPV / totalLoad) * 100) : 0;
+            
+            document.getElementById('avgDaily').textContent = formatCurrency(avgDaily);
+            document.getElementById('avgMonthly').textContent = formatCurrency(avgMonthly);
+            document.getElementById('selfSufficiency').textContent = selfSufficiency.toFixed(1) + '%';
+            document.getElementById('monthCount').textContent = monthlyData.length;
+            
+            // Show results section
+            document.getElementById('resultsSection').classList.remove('hidden');
+            
+            // Update charts
+            updateCharts();
+            
+            // Update monthly details
+            updateMonthlyDetails();
+            
+            // Save to localStorage
+            saveToLocalStorage();
+        }
+        
+        function calculateROI() {
+            const installCost = parseFloat(document.getElementById('installCost').value) || 0;
+            const evnPrice = parseFloat(document.getElementById('evnPrice').value) || EVN_PRICE;
+            
+            if (installCost <= 0 || monthlyData.length === 0) {
+                showNotification('Vui lòng nhập chi phí lắp đặt và có dữ liệu', 'error');
+                return;
+            }
+            
+            // Calculate total savings
+            let totalSavings = 0;
+            monthlyData.forEach(item => {
+                totalSavings += (item.pv - item.grid) * evnPrice;
+            });
+            
+            const avgMonthlySavings = totalSavings / monthlyData.length;
+            const annualSavings = avgMonthlySavings * 12;
+            
+            // Payback period in years
+            const paybackYears = installCost / annualSavings;
+            
+            // Annual ROI
+            const annualROI = (annualSavings / installCost) * 100;
+            
+            // Progress
+            const progress = Math.min((totalSavings / installCost) * 100, 100);
+            
+            // Update display
+            document.getElementById('paybackPeriod').textContent = paybackYears.toFixed(1) + ' năm';
+            document.getElementById('annualROI').textContent = annualROI.toFixed(1) + '%';
+            document.getElementById('roiProgress').textContent = progress.toFixed(1) + '%';
+            document.getElementById('roiProgressBar').style.width = progress + '%';
+            
+            document.getElementById('roiResults').classList.remove('hidden');
+        }
+        
+        // ========================================
+        // CHARTS
+        // ========================================
+        
+        function updateCharts() {
+            const labels = monthlyData.map(item => item.month);
+            const pvData = monthlyData.map(item => item.pv);
+            const loadData = monthlyData.map(item => item.load);
+            const gridData = monthlyData.map(item => item.grid);
+            
+            // Monthly chart
+            const ctx1 = document.getElementById('monthlyChart').getContext('2d');
+            if (monthlyChart) monthlyChart.destroy();
+            
+            monthlyChart = new Chart(ctx1, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'PV (kWh)',
+                            data: pvData,
+                            backgroundColor: 'rgba(245, 158, 11, 0.8)'
+                        },
+                        {
+                            label: 'Load (kWh)',
+                            data: loadData,
+                            backgroundColor: 'rgba(59, 130, 246, 0.8)'
+                        },
+                        {
+                            label: 'Grid (kWh)',
+                            data: gridData,
+                            backgroundColor: 'rgba(139, 92, 246, 0.8)'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'kWh'
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Savings chart
+            let cumulative = 0;
+            const savingsData = monthlyData.map(item => {
+                cumulative += item.savings;
+                return cumulative;
+            });
+            
+            const ctx2 = document.getElementById('savingsChart').getContext('2d');
+            if (savingsChart) savingsChart.destroy();
+            
+            savingsChart = new Chart(ctx2, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Tiết Kiệm Tích Lũy (VNĐ)',
+                        data: savingsData,
+                        borderColor: 'rgb(16, 185, 129)',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        fill: true,
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: value => formatCurrency(value)
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: context => formatCurrency(context.raw)
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        function updateMonthlyDetails() {
+            const container = document.getElementById('monthlyDetails');
+            container.innerHTML = '';
+            
+            const evnPrice = parseFloat(document.getElementById('evnPrice').value) || EVN_PRICE;
+            
+            monthlyData.forEach(item => {
+                const savings = (item.pv - item.grid) * evnPrice;
+                const selfRate = item.load > 0 ? ((item.pv / item.load) * 100).toFixed(1) : 0;
+                
+                const div = document.createElement('div');
+                div.className = 'month-card';
+                div.innerHTML = `
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="font-semibold">${item.month}</span>
+                        <span class="text-green-600 font-bold">${formatCurrency(savings)}</span>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2 text-sm">
+                        <div>
+                            <span class="text-gray-500">PV:</span>
+                            <span class="font-medium">${item.pv.toFixed(1)} kWh</span>
+                        </div>
+                        <div>
+                            <span class="text-gray-500">Load:</span>
+                            <span class="font-medium">${item.load.toFixed(1)} kWh</span>
+                        </div>
+                        <div>
+                            <span class="text-gray-500">Tự cung:</span>
+                            <span class="font-medium">${selfRate}%</span>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+        
+        // ========================================
+        // DATA PERSISTENCE
+        // ========================================
+        
+        function saveToLocalStorage() {
+            localStorage.setItem('solarCalculatorData', JSON.stringify({
+                monthlyData: monthlyData,
+                installCost: document.getElementById('installCost').value,
+                evnPrice: document.getElementById('evnPrice').value
+            }));
+        }
+        
+        function loadFromLocalStorage() {
+            const saved = localStorage.getItem('solarCalculatorData');
+            if (saved) {
+                try {
+                    const data = JSON.parse(saved);
+                    monthlyData = data.monthlyData || [];
+                    if (data.installCost) document.getElementById('installCost').value = data.installCost;
+                    if (data.evnPrice) document.getElementById('evnPrice').value = data.evnPrice;
+                    
+                    if (monthlyData.length > 0) {
+                        calculateAndDisplay();
+                    }
+                } catch (e) {
+                    console.log('Error loading saved data');
+                }
+            }
+        }
+        
+        function saveData() {
+            const data = {
+                monthlyData: monthlyData,
+                installCost: document.getElementById('installCost').value,
+                evnPrice: document.getElementById('evnPrice').value,
+                exportDate: new Date().toISOString()
+            };
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `solar-savings-${formatDate(new Date())}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            showNotification('Đã lưu dữ liệu', 'success');
+        }
+        
+        function loadData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    monthlyData = data.monthlyData || [];
+                    if (data.installCost) document.getElementById('installCost').value = data.installCost;
+                    if (data.evnPrice) document.getElementById('evnPrice').value = data.evnPrice;
+                    
+                    if (monthlyData.length > 0) {
+                        calculateAndDisplay();
+                        showNotification('Đã tải dữ liệu', 'success');
+                    }
+                } catch (e) {
+                    showNotification('File không hợp lệ', 'error');
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+        
+        function exportCSV() {
+            if (monthlyData.length === 0) {
+                showNotification('Không có dữ liệu để xuất', 'error');
+                return;
+            }
+            
+            const evnPrice = parseFloat(document.getElementById('evnPrice').value) || EVN_PRICE;
+            let csv = 'Tháng,Load (kWh),Grid (kWh),PV (kWh),Tiết Kiệm (VNĐ)\n';
+            
+            monthlyData.forEach(item => {
+                const savings = (item.pv - item.grid) * evnPrice;
+                csv += `${item.month},${item.load},${item.grid},${item.pv},${savings}\n`;
+            });
+            
+            const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `solar-savings-${formatDate(new Date())}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            showNotification('Đã xuất CSV', 'success');
+        }
+        
+        function clearData() {
+            if (confirm('Bạn có chắc muốn xóa tất cả dữ liệu?')) {
+                monthlyData = [];
+                localStorage.removeItem('solarCalculatorData');
+                document.getElementById('resultsSection').classList.add('hidden');
+                document.getElementById('roiResults').classList.add('hidden');
+                showNotification('Đã xóa dữ liệu', 'success');
+            }
+        }
+        
+        // ========================================
+        // UTILITY FUNCTIONS
+        // ========================================
+        
+        function formatDate(date) {
+            return date.toISOString().split('T')[0];
+        }
+        
+        function formatCurrency(value) {
+            return new Intl.NumberFormat('vi-VN', {
+                style: 'currency',
+                currency: 'VND',
+                maximumFractionDigits: 0
+            }).format(value);
+        }
+        
+        function showNotification(message, type = 'info') {
+            const notification = document.getElementById('notification');
+            const text = document.getElementById('notificationText');
+            
+            text.textContent = message;
+            notification.className = `notification ${type} show`;
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

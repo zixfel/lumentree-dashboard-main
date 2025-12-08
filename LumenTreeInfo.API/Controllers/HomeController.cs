@@ -33,6 +33,19 @@ public class HomeController : Controller
     }
 
     /// <summary>
+    /// Returns the calculator page
+    /// </summary>
+    [Route("/calculator")]
+    public IActionResult Calculator()
+    {
+        Log.Information("Rendering calculator page");
+        return PhysicalFile(
+            Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "calculator.html"),
+            "text/html"
+        );
+    }
+
+    /// <summary>
     /// Gets and returns device information and energy data
     /// </summary>
     /// <param name="deviceId">The device ID to get information for</param>
@@ -54,7 +67,6 @@ public class HomeController : Controller
             var queryDate = DateTime.Now;
             if (!string.IsNullOrEmpty(date))
             {
-                // Parse date from format "yyyy-MM-dd"
                 if (DateTime.TryParse(date, out var parsedDate))
                 {
                     queryDate = parsedDate;
@@ -94,6 +106,145 @@ public class HomeController : Controller
         {
             Log.Error(ex, "Error occurred while getting device data for {DeviceId}", deviceId);
             return StatusCode(500, "An error occurred while processing your request");
+        }
+    }
+
+    /// <summary>
+    /// Gets today's energy summary for a device
+    /// </summary>
+    /// <param name="deviceId">The device ID</param>
+    [Route("/device/{deviceId}/today")]
+    public async Task<IActionResult> GetTodayData(string deviceId)
+    {
+        if (string.IsNullOrEmpty(deviceId))
+        {
+            return BadRequest("Device ID is required");
+        }
+
+        try
+        {
+            var (deviceInfo, pvData, batData, essentialLoad, grid, load) =
+                await _client.GetAllDeviceDataAsync(deviceId, DateTime.Now);
+
+            if (pvData == null)
+            {
+                return NotFound($"No data found for device {deviceId}");
+            }
+
+            var result = new
+            {
+                DeviceId = deviceId,
+                Date = DateTime.Now.ToString("yyyy-MM-dd"),
+                SolarKwh = (pvData.TableValue) / 10.0,
+                LoadKwh = (load?.TableValue ?? 0) / 10.0,
+                GridKwh = (grid?.TableValue ?? 0) / 10.0,
+                BatChargeKwh = batData?.Bats != null && batData.Bats.Count > 0 
+                    ? (batData.Bats[0].TableValue) / 10.0 : 0,
+                BatDischargeKwh = batData?.Bats != null && batData.Bats.Count > 1 
+                    ? (batData.Bats[1].TableValue) / 10.0 : 0,
+                EssentialLoadKwh = (essentialLoad?.TableValue ?? 0) / 10.0
+            };
+
+            return Json(result);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error getting today data for {DeviceId}", deviceId);
+            return StatusCode(500, "An error occurred");
+        }
+    }
+
+    /// <summary>
+    /// Gets summary data for a device within a date range
+    /// </summary>
+    /// <param name="deviceId">The device ID</param>
+    /// <param name="from">Start date (yyyy-MM-dd)</param>
+    /// <param name="to">End date (yyyy-MM-dd)</param>
+    [Route("/device/{deviceId}/summary")]
+    public async Task<IActionResult> GetSummaryData(string deviceId, string? from, string? to)
+    {
+        if (string.IsNullOrEmpty(deviceId))
+        {
+            return BadRequest("Device ID is required");
+        }
+
+        try
+        {
+            var fromDate = string.IsNullOrEmpty(from) 
+                ? DateTime.Now.AddMonths(-1) 
+                : DateTime.Parse(from);
+            var toDate = string.IsNullOrEmpty(to) 
+                ? DateTime.Now 
+                : DateTime.Parse(to);
+
+            var dailyData = new List<object>();
+            var monthlyTotals = new Dictionary<string, (double load, double grid, double pv, int days)>();
+
+            for (var date = fromDate; date <= toDate; date = date.AddDays(1))
+            {
+                try
+                {
+                    var (deviceInfo, pvData, batData, essentialLoad, grid, load) =
+                        await _client.GetAllDeviceDataAsync(deviceId, date);
+
+                    if (pvData != null)
+                    {
+                        var monthKey = date.ToString("yyyy-MM");
+                        var loadKwh = (load?.TableValue ?? 0) / 10.0;
+                        var gridKwh = (grid?.TableValue ?? 0) / 10.0;
+                        var pvKwh = (pvData.TableValue) / 10.0;
+
+                        if (!monthlyTotals.ContainsKey(monthKey))
+                        {
+                            monthlyTotals[monthKey] = (0, 0, 0, 0);
+                        }
+
+                        var current = monthlyTotals[monthKey];
+                        monthlyTotals[monthKey] = (
+                            current.load + loadKwh,
+                            current.grid + gridKwh,
+                            current.pv + pvKwh,
+                            current.days + 1
+                        );
+
+                        dailyData.Add(new
+                        {
+                            Date = date.ToString("yyyy-MM-dd"),
+                            LoadKwh = loadKwh,
+                            GridKwh = gridKwh,
+                            PvKwh = pvKwh
+                        });
+                    }
+                }
+                catch
+                {
+                    // Skip days with no data
+                }
+            }
+
+            var monthlyData = monthlyTotals.Select(m => new
+            {
+                Month = m.Key,
+                Load = Math.Round(m.Value.load, 1),
+                Grid = Math.Round(m.Value.grid, 1),
+                Pv = Math.Round(m.Value.pv, 1),
+                Days = m.Value.days
+            }).OrderBy(m => m.Month).ToList();
+
+            return Json(new
+            {
+                DeviceId = deviceId,
+                FromDate = fromDate.ToString("yyyy-MM-dd"),
+                ToDate = toDate.ToString("yyyy-MM-dd"),
+                TotalDays = dailyData.Count,
+                MonthlyData = monthlyData,
+                DailyData = dailyData
+            });
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error getting summary data for {DeviceId}", deviceId);
+            return StatusCode(500, "An error occurred");
         }
     }
 
