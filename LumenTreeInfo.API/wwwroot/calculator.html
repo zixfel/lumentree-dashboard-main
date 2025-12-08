@@ -4674,34 +4674,25 @@
                     </button>
                 </div>
                 
-                <!-- Tab Dashboard (Local) -->
+                <!-- Tab Dashboard (Proxy to Lumentree) -->
                 <div id="lumentreeTabDashboard">
                     <div class="evn-warning" style="border-color: #f59e0b; background: rgba(245, 158, 11, 0.15); color: #fbbf24;">
-                        <strong>🏠 Lấy dữ liệu từ Dashboard:</strong> Nhanh nhất, lấy trực tiếp từ server này.<br>
-                        Nhập Device ID và số tháng cần lấy dữ liệu.
+                        <strong>⚡ Lấy dữ liệu nhanh:</strong> Proxy qua server, không bị chặn CORS.<br>
+                        Lấy toàn bộ dữ liệu từ Lumentree.net một cách nhanh chóng.
                     </div>
                     
                     <div class="evn-input-section" style="border-color: #f59e0b;">
-                        <h3 style="color: #f59e0b;">🔗 Kết Nối Dashboard</h3>
+                        <h3 style="color: #f59e0b;">🔗 Kết Nối Qua Dashboard</h3>
                         <div class="evn-input-group">
                             <label for="dashboardDeviceId">Device ID:</label>
                             <input type="text" id="dashboardDeviceId" placeholder="Ví dụ: P250801055" style="text-transform: uppercase;">
                         </div>
-                        <div class="evn-input-group">
-                            <label for="dashboardMonths">Số tháng:</label>
-                            <select id="dashboardMonths" style="width: 100%; padding: 12px; border: 2px solid #4a5568; border-radius: 10px; background: rgba(26, 32, 44, 0.8); color: #e2e8f0; font-size: 1em;">
-                                <option value="3">3 tháng gần nhất</option>
-                                <option value="6">6 tháng gần nhất</option>
-                                <option value="12" selected>12 tháng gần nhất</option>
-                                <option value="24">24 tháng (2 năm)</option>
-                            </select>
-                        </div>
                         <button class="evn-btn-calculate" onclick="fetchDashboardData()" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
-                            ⚡ Lấy Dữ Liệu Nhanh
+                            ⚡ Lấy Toàn Bộ Dữ Liệu
                         </button>
                         <div style="margin: 12px 0 0 0; font-size: 0.75em; color: #9ca3af; text-align: left; line-height: 1.6;">
-                            <p style="margin: 0;">⚡ <em>Tốc độ nhanh hơn, không cần qua proxy bên ngoài</em></p>
-                            <p style="margin: 6px 0 0 0;">📊 <em>Dữ liệu được tổng hợp từ mỗi ngày trong các tháng</em></p>
+                            <p style="margin: 0;">⚡ <em>Nhanh và ổn định - Lấy trực tiếp qua server proxy</em></p>
+                            <p style="margin: 6px 0 0 0;">📊 <em>Lấy toàn bộ dữ liệu có sẵn từ Lumentree.net</em></p>
                         </div>
                     </div>
                 </div>
@@ -5086,10 +5077,9 @@
             document.getElementById('lumentreeResultSection').classList.remove('show');
         }
         
-        // Fetch data from local Dashboard API
+        // Fetch data from local Dashboard API (proxy to lumentree.net)
         async function fetchDashboardData() {
             const deviceId = document.getElementById('dashboardDeviceId').value.trim().toUpperCase();
-            const months = parseInt(document.getElementById('dashboardMonths').value) || 12;
             
             if (!deviceId) {
                 showNotification('⚠️ Vui lòng nhập Device ID!', 'error');
@@ -5102,10 +5092,10 @@
             document.getElementById('manualDeviceId').value = deviceId;
             
             try {
-                showNotification(`🔄 Đang lấy dữ liệu ${months} tháng từ Dashboard...`, 'info');
+                showNotification(`🔄 Đang lấy dữ liệu từ Lumentree qua Dashboard...`, 'info');
                 
                 const startTime = Date.now();
-                const response = await fetch(`/device/${deviceId}/monthly?months=${months}`);
+                const response = await fetch(`/device/${deviceId}/monthly`);
                 
                 if (!response.ok) {
                     throw new Error(`Server trả về lỗi: ${response.status}`);
@@ -5127,7 +5117,7 @@
                 let previewHtml = `
                     <div style="background: rgba(245, 158, 11, 0.1); padding: 15px; border-radius: 10px; margin-bottom: 15px;">
                         <div style="font-size: 1.1em; font-weight: bold; color: #f59e0b; margin-bottom: 10px;">
-                            🏠 Dashboard: ${deviceId}
+                            ⚡ Proxy: ${deviceId}
                         </div>
                         <div style="color: #cbd5e0;">
                             📅 Tìm thấy <strong>${monthsWithData.length}</strong> tháng có dữ liệu (${elapsed}ms)
@@ -5141,7 +5131,7 @@
                                     <th style="padding: 8px; text-align: right; border-bottom: 2px solid #f59e0b;">Load</th>
                                     <th style="padding: 8px; text-align: right; border-bottom: 2px solid #f59e0b;">Grid</th>
                                     <th style="padding: 8px; text-align: right; border-bottom: 2px solid #f59e0b;">PV</th>
-                                    <th style="padding: 8px; text-align: right; border-bottom: 2px solid #f59e0b;">Days</th>
+                                    <th style="padding: 8px; text-align: right; border-bottom: 2px solid #f59e0b;">Backup</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -5156,7 +5146,7 @@
                             <td style="padding: 6px 8px; border-bottom: 1px solid #4a5568; text-align: right;">${m.load.toFixed(1)}</td>
                             <td style="padding: 6px 8px; border-bottom: 1px solid #4a5568; text-align: right;">${m.grid.toFixed(1)}</td>
                             <td style="padding: 6px 8px; border-bottom: 1px solid #4a5568; text-align: right; color: #f59e0b;">${m.pv.toFixed(1)}</td>
-                            <td style="padding: 6px 8px; border-bottom: 1px solid #4a5568; text-align: right;">${m.days || '-'}</td>
+                            <td style="padding: 6px 8px; border-bottom: 1px solid #4a5568; text-align: right;">${m.backup.toFixed(1)}</td>
                         </tr>
                     `;
                 });
@@ -5170,7 +5160,7 @@
                 document.getElementById('lumentreePreview').innerHTML = previewHtml;
                 document.getElementById('lumentreeResultSection').classList.add('show');
                 
-                showNotification(`✅ Đã lấy ${monthsWithData.length} tháng từ Dashboard (${elapsed}ms)!`, 'success');
+                showNotification(`✅ Đã lấy ${monthsWithData.length} tháng từ Lumentree (${elapsed}ms)!`, 'success');
                 
             } catch (error) {
                 console.error('Dashboard fetch error:', error);

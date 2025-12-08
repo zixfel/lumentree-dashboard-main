@@ -249,13 +249,12 @@ public class HomeController : Controller
     }
 
     /// <summary>
-    /// Gets monthly data for calculator (compatible with Lumentree format)
+    /// Gets monthly data for calculator (proxy to lumentree.net API)
     /// Returns data in the same format as lumentree.net/api/monthly/{deviceId}
     /// </summary>
     /// <param name="deviceId">The device ID</param>
-    /// <param name="months">Number of months to fetch (default 12)</param>
     [Route("/device/{deviceId}/monthly")]
-    public async Task<IActionResult> GetMonthlyData(string deviceId, int months = 12)
+    public async Task<IActionResult> GetMonthlyData(string deviceId)
     {
         if (string.IsNullOrEmpty(deviceId))
         {
@@ -264,76 +263,40 @@ public class HomeController : Controller
 
         try
         {
-            Log.Information("Getting monthly data for device {DeviceId}, last {Months} months", deviceId, months);
+            Log.Information("Fetching monthly data from lumentree.net for device {DeviceId}", deviceId);
             
-            var result = new List<object>();
-            var endDate = DateTime.Now;
-            var startDate = new DateTime(endDate.Year, endDate.Month, 1).AddMonths(-months + 1);
+            using var httpClient = new HttpClient();
+            httpClient.Timeout = TimeSpan.FromSeconds(30);
             
-            // Process each month
-            for (var monthStart = startDate; monthStart <= endDate; monthStart = monthStart.AddMonths(1))
+            // Fetch directly from lumentree.net API
+            var apiUrl = $"https://lumentree.net/api/monthly/{deviceId}";
+            
+            var response = await httpClient.GetAsync(apiUrl);
+            
+            if (!response.IsSuccessStatusCode)
             {
-                var monthKey = monthStart.ToString("yyyy-MM");
-                double totalLoad = 0, totalGrid = 0, totalPv = 0, totalBackup = 0;
-                int daysWithData = 0;
-                
-                // Get last day of month
-                var lastDayOfMonth = new DateTime(monthStart.Year, monthStart.Month, 
-                    DateTime.DaysInMonth(monthStart.Year, monthStart.Month));
-                
-                // Don't go beyond today
-                if (lastDayOfMonth > endDate)
-                {
-                    lastDayOfMonth = endDate;
-                }
-                
-                // Fetch data for each day in the month
-                for (var day = monthStart; day <= lastDayOfMonth; day = day.AddDays(1))
-                {
-                    try
-                    {
-                        var (deviceInfo, pvData, batData, essentialLoad, grid, load) =
-                            await _client.GetAllDeviceDataAsync(deviceId, day);
-                        
-                        if (pvData != null || load != null || grid != null)
-                        {
-                            totalPv += (pvData?.TableValue ?? 0) / 10.0;
-                            totalLoad += (load?.TableValue ?? 0) / 10.0;
-                            totalGrid += (grid?.TableValue ?? 0) / 10.0;
-                            
-                            // Backup = discharge from battery
-                            if (batData?.Bats != null && batData.Bats.Count > 1)
-                            {
-                                totalBackup += batData.Bats[1].TableValue / 10.0;
-                            }
-                            
-                            daysWithData++;
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Log.Debug("No data for {DeviceId} on {Date}: {Error}", deviceId, day.ToString("yyyy-MM-dd"), ex.Message);
-                    }
-                    
-                    // Small delay to avoid rate limiting
-                    await Task.Delay(50);
-                }
-                
-                result.Add(new
-                {
-                    month = monthKey,
-                    load = Math.Round(totalLoad, 1),
-                    grid = Math.Round(totalGrid, 1),
-                    pv = Math.Round(totalPv, 1),
-                    backup = Math.Round(totalBackup, 1),
-                    days = daysWithData
-                });
-                
-                Log.Information("Month {Month}: Load={Load}, Grid={Grid}, PV={Pv}, Days={Days}", 
-                    monthKey, totalLoad, totalGrid, totalPv, daysWithData);
+                Log.Warning("Lumentree API returned {StatusCode} for device {DeviceId}", 
+                    response.StatusCode, deviceId);
+                return StatusCode((int)response.StatusCode, "Failed to fetch data from Lumentree");
             }
             
-            return Json(result);
+            var content = await response.Content.ReadAsStringAsync();
+            
+            // Parse and return the JSON directly
+            var data = System.Text.Json.JsonSerializer.Deserialize<object>(content);
+            
+            Log.Information("Successfully fetched monthly data for device {DeviceId}", deviceId);
+            return Json(data);
+        }
+        catch (HttpRequestException ex)
+        {
+            Log.Error(ex, "HTTP error fetching monthly data for {DeviceId}", deviceId);
+            return StatusCode(502, $"Failed to connect to Lumentree API: {ex.Message}");
+        }
+        catch (TaskCanceledException ex)
+        {
+            Log.Error(ex, "Timeout fetching monthly data for {DeviceId}", deviceId);
+            return StatusCode(504, "Request to Lumentree API timed out");
         }
         catch (Exception ex)
         {

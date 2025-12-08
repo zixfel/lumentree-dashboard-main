@@ -53,6 +53,10 @@ document.addEventListener('DOMContentLoaded', function () {
     // SignalR connection
     let connection;
     let currentDeviceId = '';
+    
+    // SOC History for real-time chart
+    let socHistory = [];
+    const MAX_SOC_HISTORY = 288; // 24 hours * 12 (5-min intervals)
 
     // ========================================
     // EVENT LISTENERS
@@ -356,6 +360,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Initialize battery cell display with default values
         initializeBatteryCells();
+        
+        // Initialize SOC chart with demo data (will be replaced by real-time data)
+        initializeSOCChart();
     }
 
     function updateDeviceInfo(deviceInfo) {
@@ -460,6 +467,35 @@ document.addEventListener('DOMContentLoaded', function () {
         updateFlowStatus('battery-flow', data.batteryValue !== 0);
         updateFlowStatus('essential-flow', data.essentialValue > 0);
         updateFlowStatus('load-flow', data.loadValue > 0);
+        
+        // Update last refresh time
+        const now = new Date();
+        const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+        const lastUpdateEl = document.getElementById('lastUpdateTime');
+        if (lastUpdateEl) {
+            lastUpdateEl.textContent = `Cập nhật: ${timeStr}`;
+        }
+        
+        // Update SOC history for real-time chart
+        if (batteryPercent > 0) {
+            const now = new Date();
+            const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+            
+            // Add new data point
+            socHistory.push({
+                time: timeStr,
+                soc: batteryPercent,
+                timestamp: now.getTime()
+            });
+            
+            // Keep only last MAX_SOC_HISTORY points
+            if (socHistory.length > MAX_SOC_HISTORY) {
+                socHistory = socHistory.slice(-MAX_SOC_HISTORY);
+            }
+            
+            // Update SOC chart with real-time data
+            updateSOCChartRealTime();
+        }
     }
 
     // ========================================
@@ -578,58 +614,169 @@ document.addEventListener('DOMContentLoaded', function () {
     // SOC CHART
     // ========================================
     
+    // Update SOC chart with real-time data from SignalR
+    function updateSOCChartRealTime() {
+        const ctx = document.getElementById('socChart');
+        if (!ctx) return;
+        
+        if (socHistory.length === 0) return;
+        
+        const labels = socHistory.map(item => item.time);
+        const values = socHistory.map(item => item.soc);
+        
+        if (socChart) {
+            // Update existing chart data
+            socChart.data.labels = labels;
+            socChart.data.datasets[0].data = values;
+            socChart.update('none'); // 'none' for no animation on update
+        } else {
+            // Create new chart
+            socChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'SOC (%)',
+                        data: values,
+                        borderColor: 'rgb(34, 197, 94)',
+                        backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                        fill: true,
+                        tension: 0.3,
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        pointHoverRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            callbacks: {
+                                label: function(context) {
+                                    return `SOC: ${context.parsed.y}%`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            min: 0,
+                            max: 100,
+                            ticks: {
+                                callback: value => value + '%',
+                                stepSize: 20
+                            },
+                            grid: {
+                                color: 'rgba(200, 200, 200, 0.1)'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                maxRotation: 0,
+                                autoSkip: true,
+                                autoSkipPadding: 30,
+                                font: { size: 10 }
+                            },
+                            grid: {
+                                display: false
+                            }
+                        }
+                    },
+                    interaction: {
+                        mode: 'nearest',
+                        axis: 'x',
+                        intersect: false
+                    }
+                }
+            });
+        }
+    }
+    
+    // Initialize SOC chart with mock/demo data if no real data
+    function initializeSOCChart() {
+        const ctx = document.getElementById('socChart');
+        if (!ctx) return;
+        
+        // Generate mock SOC data for demo (simulating a typical day)
+        const mockData = generateMockSOCData();
+        socHistory = mockData;
+        
+        updateSOCChartRealTime();
+        console.log("Initialized SOC chart with demo data");
+    }
+    
+    // Generate realistic mock SOC data for a day
+    function generateMockSOCData() {
+        const data = [];
+        const now = new Date();
+        const currentHour = now.getHours();
+        const currentMinute = now.getMinutes();
+        
+        // Start from beginning of day
+        let soc = 50; // Start at 50%
+        
+        for (let hour = 0; hour <= currentHour; hour++) {
+            const maxMinute = (hour === currentHour) ? currentMinute : 55;
+            
+            for (let minute = 0; minute <= maxMinute; minute += 5) {
+                // Simulate SOC pattern:
+                // - Night (0-6): slow discharge
+                // - Morning (6-9): start charging
+                // - Day (9-15): strong charging from solar
+                // - Evening (15-18): peak usage, discharge
+                // - Night (18-24): slow discharge
+                
+                if (hour >= 0 && hour < 6) {
+                    // Night: slow discharge
+                    soc = Math.max(20, soc - Math.random() * 0.3);
+                } else if (hour >= 6 && hour < 9) {
+                    // Morning: start charging
+                    soc = Math.min(100, soc + Math.random() * 1.5);
+                } else if (hour >= 9 && hour < 15) {
+                    // Day: strong solar charging
+                    soc = Math.min(100, soc + Math.random() * 2);
+                } else if (hour >= 15 && hour < 18) {
+                    // Evening: peak usage
+                    soc = Math.max(30, soc - Math.random() * 1.5);
+                } else {
+                    // Night: slow discharge
+                    soc = Math.max(20, soc - Math.random() * 0.5);
+                }
+                
+                const timeStr = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+                data.push({
+                    time: timeStr,
+                    soc: Math.round(soc),
+                    timestamp: new Date(now.getFullYear(), now.getMonth(), now.getDate(), hour, minute).getTime()
+                });
+            }
+        }
+        
+        return data;
+    }
+    
+    // Legacy function for SignalR SOC data (if API sends history)
     function updateSOCChart(data) {
         if (!data || !data.history) return;
 
         const ctx = document.getElementById('socChart');
         if (!ctx) return;
 
-        const labels = data.history.map(item => item.time);
-        const values = data.history.map(item => item.soc);
-
-        if (socChart) {
-            socChart.destroy();
-        }
-
-        socChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'SOC (%)',
-                    data: values,
-                    borderColor: 'rgb(34, 197, 94)',
-                    backgroundColor: 'rgba(34, 197, 94, 0.1)',
-                    fill: true,
-                    tension: 0.3
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: false
-                    }
-                },
-                scales: {
-                    y: {
-                        min: 0,
-                        max: 100,
-                        ticks: {
-                            callback: value => value + '%'
-                        }
-                    },
-                    x: {
-                        ticks: {
-                            maxRotation: 0,
-                            autoSkip: true,
-                            autoSkipPadding: 20
-                        }
-                    }
-                }
-            }
-        });
+        // Convert API data to socHistory format
+        socHistory = data.history.map(item => ({
+            time: item.time,
+            soc: item.soc,
+            timestamp: Date.now()
+        }));
+        
+        updateSOCChartRealTime();
     }
 
     // ========================================
