@@ -1,6 +1,6 @@
 /**
  * Solar Monitor - Custom CSS
- * Version: 08014 - Dark Blue Cards + Renamed Labels
+ * Version: 08016 - LightEarth Branding + Cyan-Violet-Pink Theme
  */
 
 /* ========================================
@@ -313,7 +313,7 @@ canvas:hover {
 
 .loading-spinner {
     border: 3px solid #f3f3f3;
-    border-top: 3px solid #f59e0b;
+    border-top: 3px solid #8b5cf6;
     border-radius: 50%;
     width: 40px;
     height: 40px;
@@ -344,12 +344,12 @@ canvas:hover {
 }
 
 ::-webkit-scrollbar-thumb {
-    background: #d97706;
+    background: #8b5cf6;
     border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: #b45309;
+    background: #7c3aed;
 }
 
 /* ========================================

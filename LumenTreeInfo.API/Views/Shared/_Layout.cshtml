@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Giám Sát Năng Lượng Mặt Trời - SolarVision Pro</title>
+    <title>Giám Sát Năng Lượng Mặt Trời - LightEarth Web Pro</title>
     
     <!-- Tailwind CSS with custom config -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -13,17 +13,17 @@
             theme: {
                 extend: {
                     colors: {
-                        solar: {
-                            50: '#fffbeb',
-                            100: '#fef3c7',
-                            200: '#fde68a',
-                            300: '#fcd34d',
-                            400: '#fbbf24',
-                            500: '#f59e0b',
-                            600: '#d97706',
-                            700: '#b45309',
-                            800: '#92400e',
-                            900: '#78350f',
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            200: '#bae6fd',
+                            300: '#7dd3fc',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
                         }
                     }
                 }
@@ -51,16 +51,16 @@
             font-family: 'Inter', sans-serif;
         }
         
-        .gradient-solar {
-            background: linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #b45309 100%);
+        .gradient-brand {
+            background: linear-gradient(135deg, #06b6d4 0%, #8b5cf6 50%, #ec4899 100%);
         }
         
         .gradient-dark {
-            background: linear-gradient(135deg, #1f2937 0%, #111827 50%, #0f172a 100%);
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
         }
         
-        .shadow-solar {
-            box-shadow: 0 4px 14px 0 rgba(245, 158, 11, 0.39);
+        .shadow-brand {
+            box-shadow: 0 4px 14px 0 rgba(139, 92, 246, 0.4);
         }
         
         /* Scrollbar styling */
@@ -79,12 +79,12 @@
         }
         
         ::-webkit-scrollbar-thumb {
-            background: #d97706;
+            background: #8b5cf6;
             border-radius: 3px;
         }
         
         ::-webkit-scrollbar-thumb:hover {
-            background: #b45309;
+            background: #7c3aed;
         }
         
         /* Connection status indicator */
@@ -98,7 +98,7 @@
         }
         
         .status-connecting {
-            background-color: #f59e0b;
+            background-color: #8b5cf6;
             animation: pulse-yellow 1s infinite;
         }
         
@@ -170,16 +170,14 @@
 </head>
 <body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 min-h-screen">
     <!-- Header -->
-    <header class="gradient-solar dark:gradient-dark shadow-lg sticky top-0 z-50">
+    <header class="gradient-brand dark:gradient-dark shadow-lg sticky top-0 z-50">
         <div class="container mx-auto px-4 py-3">
             <div class="flex items-center justify-between">
                 <!-- Logo -->
                 <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                        <i data-lucide="sun" class="w-6 h-6 text-white"></i>
-                    </div>
+                    <img src="/logo.png" alt="LightEarth" class="w-10 h-10 rounded-xl">
                     <div>
-                        <h1 class="text-xl font-bold text-white">SolarVision Pro</h1>
+                        <h1 class="text-xl font-bold text-white">LightEarth Web Pro</h1>
                         <p class="text-xs text-white/70">Giám Sát Năng Lượng Mặt Trời</p>
                     </div>
                 </div>
@@ -216,7 +214,7 @@
     
     <!-- Floating Action Button - Calculator -->
     <button onclick="openCalculatorModal()" 
-            class="fab gradient-solar shadow-solar text-white sm:hidden"
+            class="fab gradient-brand shadow-brand text-white sm:hidden"
             title="Tính Tiết Kiệm">
         <i data-lucide="calculator" class="w-6 h-6"></i>
     </button>
