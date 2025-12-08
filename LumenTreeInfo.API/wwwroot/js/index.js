@@ -1,6 +1,6 @@
 /**
  * Solar Monitor - Frontend JavaScript
- * Version: 08012 - Mobile Optimized + Battery Cell + SOC Chart + Calculator Integration
+ * Version: 08013 - Grouped Summary Cards + Hide Hero on Load + Fixed Calculate Button
  * 
  * Features:
  * - Real-time data via SignalR
@@ -9,6 +9,9 @@
  * - Energy flow visualization
  * - Chart.js visualizations
  * - Mobile optimized interface
+ * - Grouped summary cards (PV+Load, Battery, Grid+ACOut)
+ * - Auto-hide hero section after data load
+ * - Fixed calculate savings button
  */
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -119,18 +122,33 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Compact search bar toggle
-    const compactSearchToggle = document.getElementById('compactSearchToggle');
-    const compactSearchBar = document.getElementById('compactSearchBar');
-    if (compactSearchToggle && compactSearchBar) {
-        compactSearchToggle.addEventListener('click', () => {
-            // Show the full search bar
-            const searchSection = document.getElementById('search-section');
-            if (searchSection) {
-                searchSection.scrollIntoView({ behavior: 'smooth' });
+    // Change device button - show hero section again
+    const changeDeviceBtn = document.getElementById('changeDeviceBtn');
+    if (changeDeviceBtn) {
+        changeDeviceBtn.addEventListener('click', () => {
+            const heroSection = document.getElementById('heroSection');
+            const compactSearch = document.getElementById('compactSearch');
+            
+            if (heroSection) {
+                heroSection.classList.remove('hidden');
+            }
+            if (compactSearch) {
+                compactSearch.classList.add('hidden');
+            }
+            // Focus on device ID input
+            const deviceIdInput = document.getElementById('deviceId');
+            if (deviceIdInput) {
+                deviceIdInput.focus();
+                deviceIdInput.select();
             }
         });
     }
+    
+    // Compact date navigation
+    const prevDayCompact = document.getElementById('prevDayCompact');
+    const nextDayCompact = document.getElementById('nextDayCompact');
+    if (prevDayCompact) prevDayCompact.addEventListener('click', () => changeDate(-1));
+    if (nextDayCompact) nextDayCompact.addEventListener('click', () => changeDate(1));
 
     // Initialize SignalR
     initializeSignalRConnection();
@@ -315,19 +333,29 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function showCompactSearchBar(deviceId, date) {
-        const compactBar = document.getElementById('compactSearchBar');
-        const compactDeviceId = document.getElementById('compactDeviceId');
-        const compactDate = document.getElementById('compactDate');
+        // Hide hero section and show compact bar
+        const heroSection = document.getElementById('heroSection');
+        const compactSearch = document.getElementById('compactSearch');
+        const deviceIdDisplay = document.getElementById('deviceIdDisplay');
+        const dateDisplay = document.getElementById('dateDisplay');
+        const fixedCalculateBtn = document.getElementById('fixedCalculateBtn');
 
-        if (compactBar) {
-            compactBar.classList.remove('hidden');
+        if (heroSection) {
+            heroSection.classList.add('hidden');
         }
-        if (compactDeviceId) {
-            compactDeviceId.textContent = deviceId;
+        if (compactSearch) {
+            compactSearch.classList.remove('hidden');
         }
-        if (compactDate) {
+        if (deviceIdDisplay) {
+            deviceIdDisplay.textContent = deviceId;
+        }
+        if (dateDisplay) {
             const dateObj = new Date(date);
-            compactDate.textContent = dateObj.toLocaleDateString('vi-VN');
+            dateDisplay.textContent = dateObj.toLocaleDateString('vi-VN');
+        }
+        // Show fixed calculate button
+        if (fixedCalculateBtn) {
+            fixedCalculateBtn.classList.remove('hidden');
         }
     }
 

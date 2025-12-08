@@ -1,6 +1,6 @@
 /**
  * Solar Monitor - Custom CSS
- * Version: 08012 - Mobile Optimized + 4-column Cell Grid + SOC Chart
+ * Version: 08013 - Grouped Summary Cards + Fixed Calculate Button
  */
 
 /* ========================================
@@ -578,6 +578,53 @@ canvas:hover {
 }
 
 /* ========================================
+   FIXED CALCULATE BUTTON
+   ======================================== */
+
+#fixedCalculateBtn {
+    animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+#fixedCalculateBtn a {
+    box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4);
+}
+
+#fixedCalculateBtn a:hover {
+    box-shadow: 0 6px 25px rgba(16, 185, 129, 0.5);
+}
+
+/* ========================================
+   GROUPED SUMMARY CARDS
+   ======================================== */
+
+#summaryStats .grid > div {
+    transition: all 0.3s ease;
+}
+
+#summaryStats .grid > div:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+/* Responsive for mobile */
+@media (max-width: 640px) {
+    #summaryStats .grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ========================================
    PRINT STYLES
    ======================================== */
 
@@ -586,7 +633,8 @@ canvas:hover {
     .compact-search-bar,
     header,
     .hero-toggle,
-    .cell-toggle {
+    .cell-toggle,
+    #fixedCalculateBtn {
         display: none !important;
     }
     
