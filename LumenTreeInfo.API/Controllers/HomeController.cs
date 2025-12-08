@@ -249,6 +249,100 @@ public class HomeController : Controller
     }
 
     /// <summary>
+    /// Gets monthly data for calculator (compatible with Lumentree format)
+    /// Returns data in the same format as lumentree.net/api/monthly/{deviceId}
+    /// </summary>
+    /// <param name="deviceId">The device ID</param>
+    /// <param name="months">Number of months to fetch (default 12)</param>
+    [Route("/device/{deviceId}/monthly")]
+    public async Task<IActionResult> GetMonthlyData(string deviceId, int months = 12)
+    {
+        if (string.IsNullOrEmpty(deviceId))
+        {
+            return BadRequest("Device ID is required");
+        }
+
+        try
+        {
+            Log.Information("Getting monthly data for device {DeviceId}, last {Months} months", deviceId, months);
+            
+            var result = new List<object>();
+            var endDate = DateTime.Now;
+            var startDate = new DateTime(endDate.Year, endDate.Month, 1).AddMonths(-months + 1);
+            
+            // Process each month
+            for (var monthStart = startDate; monthStart <= endDate; monthStart = monthStart.AddMonths(1))
+            {
+                var monthKey = monthStart.ToString("yyyy-MM");
+                double totalLoad = 0, totalGrid = 0, totalPv = 0, totalBackup = 0;
+                int daysWithData = 0;
+                
+                // Get last day of month
+                var lastDayOfMonth = new DateTime(monthStart.Year, monthStart.Month, 
+                    DateTime.DaysInMonth(monthStart.Year, monthStart.Month));
+                
+                // Don't go beyond today
+                if (lastDayOfMonth > endDate)
+                {
+                    lastDayOfMonth = endDate;
+                }
+                
+                // Fetch data for each day in the month
+                for (var day = monthStart; day <= lastDayOfMonth; day = day.AddDays(1))
+                {
+                    try
+                    {
+                        var (deviceInfo, pvData, batData, essentialLoad, grid, load) =
+                            await _client.GetAllDeviceDataAsync(deviceId, day);
+                        
+                        if (pvData != null || load != null || grid != null)
+                        {
+                            totalPv += (pvData?.TableValue ?? 0) / 10.0;
+                            totalLoad += (load?.TableValue ?? 0) / 10.0;
+                            totalGrid += (grid?.TableValue ?? 0) / 10.0;
+                            
+                            // Backup = discharge from battery
+                            if (batData?.Bats != null && batData.Bats.Count > 1)
+                            {
+                                totalBackup += batData.Bats[1].TableValue / 10.0;
+                            }
+                            
+                            daysWithData++;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Debug("No data for {DeviceId} on {Date}: {Error}", deviceId, day.ToString("yyyy-MM-dd"), ex.Message);
+                    }
+                    
+                    // Small delay to avoid rate limiting
+                    await Task.Delay(50);
+                }
+                
+                result.Add(new
+                {
+                    month = monthKey,
+                    load = Math.Round(totalLoad, 1),
+                    grid = Math.Round(totalGrid, 1),
+                    pv = Math.Round(totalPv, 1),
+                    backup = Math.Round(totalBackup, 1),
+                    days = daysWithData
+                });
+                
+                Log.Information("Month {Month}: Load={Load}, Grid={Grid}, PV={Pv}, Days={Days}", 
+                    monthKey, totalLoad, totalGrid, totalPv, daysWithData);
+            }
+            
+            return Json(result);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error getting monthly data for {DeviceId}", deviceId);
+            return StatusCode(500, "An error occurred while fetching monthly data");
+        }
+    }
+
+    /// <summary>
     /// Returns an error view
     /// </summary>
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]

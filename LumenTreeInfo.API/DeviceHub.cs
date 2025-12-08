@@ -32,6 +32,7 @@ public class SolarMonitorService : IHostedService, IDisposable
 
         // Register event handlers
         _monitor.DeviceDataReceived += OnDeviceDataReceived;
+        _monitor.BatteryCellDataReceived += OnBatteryCellDataReceived;
     }
 
     public async Task StartAsync(CancellationToken cancellationToken)
@@ -182,6 +183,41 @@ public class SolarMonitorService : IHostedService, IDisposable
         catch (Exception ex)
         {
             Log.Error(ex, "Error processing device data for {DeviceId}", deviceData.DeviceId);
+        }
+    }
+
+    // Called when we receive battery cell data from the SolarInverterMonitor
+    private async void OnBatteryCellDataReceived(object? sender, SolarInverterMonitor.BatteryCellData cellData)
+    {
+        try
+        {
+            // Convert cell voltages dictionary to array for easier frontend processing
+            var cellVoltages = cellData.CellVoltages
+                .OrderBy(kv => kv.Key)
+                .Select(kv => kv.Value)
+                .ToArray();
+
+            var data = new
+            {
+                deviceId = cellData.DeviceId,
+                cells = cellVoltages,
+                numberOfCells = cellData.NumberOfCells,
+                averageVoltage = cellData.AverageVoltage,
+                minimumVoltage = cellData.MinimumVoltage,
+                maximumVoltage = cellData.MaximumVoltage,
+                voltageDifference = cellData.VoltageDifference,
+                timestamp = DateTime.UtcNow
+            };
+
+            // Send to connected clients
+            await _hubContext.Clients.Group(cellData.DeviceId).SendAsync("ReceiveBatteryCellData", data);
+
+            Log.Information("Sent battery cell data for device {DeviceId}: {NumCells} cells", 
+                cellData.DeviceId, cellData.NumberOfCells);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error processing battery cell data for {DeviceId}", cellData.DeviceId);
         }
     }
 

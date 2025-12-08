@@ -742,9 +742,11 @@ public class SolarInverterMonitor : IDisposable
                 {
                     Log.Information($"Checking device: {deviceId}");
                     var task = RequestDeviceInfoAsync(deviceId);
-                    //await RequestBatteryCellInfoAsync(deviceId);
-
                     tasks.Add(task);
+                    
+                    // Request battery cell info every cycle
+                    var cellTask = RequestBatteryCellInfoAsync(deviceId);
+                    tasks.Add(cellTask);
                 }
 
                 // Wait for all requests to complete

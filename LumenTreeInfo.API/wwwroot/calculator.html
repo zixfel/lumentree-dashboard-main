@@ -4662,19 +4662,54 @@
                 </p>
                 
                 <!-- Tab buttons -->
-                <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-                    <button id="tabAuto" class="evn-btn-calculate" onclick="switchLumentreeTab('auto')" style="flex: 1; background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
-                        🔄 Tự Động
+                <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+                    <button id="tabDashboard" class="evn-btn-calculate" onclick="switchLumentreeTab('dashboard')" style="flex: 1; min-width: 100px; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
+                        🏠 Từ Dashboard
                     </button>
-                    <button id="tabManual" class="evn-btn-calculate" onclick="switchLumentreeTab('manual')" style="flex: 1; background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);">
+                    <button id="tabAuto" class="evn-btn-calculate" onclick="switchLumentreeTab('auto')" style="flex: 1; min-width: 100px; background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);">
+                        🔄 Từ Lumentree
+                    </button>
+                    <button id="tabManual" class="evn-btn-calculate" onclick="switchLumentreeTab('manual')" style="flex: 1; min-width: 100px; background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);">
                         📋 Thủ Công
                     </button>
                 </div>
                 
+                <!-- Tab Dashboard (Local) -->
+                <div id="lumentreeTabDashboard">
+                    <div class="evn-warning" style="border-color: #f59e0b; background: rgba(245, 158, 11, 0.15); color: #fbbf24;">
+                        <strong>🏠 Lấy dữ liệu từ Dashboard:</strong> Nhanh nhất, lấy trực tiếp từ server này.<br>
+                        Nhập Device ID và số tháng cần lấy dữ liệu.
+                    </div>
+                    
+                    <div class="evn-input-section" style="border-color: #f59e0b;">
+                        <h3 style="color: #f59e0b;">🔗 Kết Nối Dashboard</h3>
+                        <div class="evn-input-group">
+                            <label for="dashboardDeviceId">Device ID:</label>
+                            <input type="text" id="dashboardDeviceId" placeholder="Ví dụ: P250801055" style="text-transform: uppercase;">
+                        </div>
+                        <div class="evn-input-group">
+                            <label for="dashboardMonths">Số tháng:</label>
+                            <select id="dashboardMonths" style="width: 100%; padding: 12px; border: 2px solid #4a5568; border-radius: 10px; background: rgba(26, 32, 44, 0.8); color: #e2e8f0; font-size: 1em;">
+                                <option value="3">3 tháng gần nhất</option>
+                                <option value="6">6 tháng gần nhất</option>
+                                <option value="12" selected>12 tháng gần nhất</option>
+                                <option value="24">24 tháng (2 năm)</option>
+                            </select>
+                        </div>
+                        <button class="evn-btn-calculate" onclick="fetchDashboardData()" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
+                            ⚡ Lấy Dữ Liệu Nhanh
+                        </button>
+                        <div style="margin: 12px 0 0 0; font-size: 0.75em; color: #9ca3af; text-align: left; line-height: 1.6;">
+                            <p style="margin: 0;">⚡ <em>Tốc độ nhanh hơn, không cần qua proxy bên ngoài</em></p>
+                            <p style="margin: 6px 0 0 0;">📊 <em>Dữ liệu được tổng hợp từ mỗi ngày trong các tháng</em></p>
+                        </div>
+                    </div>
+                </div>
+                
                 <!-- Tab Auto -->
-                <div id="lumentreeTabAuto">
+                <div id="lumentreeTabAuto" style="display: none;">
                     <div class="evn-warning" style="border-color: #10b981; background: rgba(16, 185, 129, 0.15); color: #6ee7b7;">
-                        <strong>📌 Cách 1 - Tự động:</strong> Nhập Device ID để lấy dữ liệu tự động.<br>
+                        <strong>📌 Từ Lumentree.net:</strong> Nhập Device ID để lấy dữ liệu từ server Lumentree.<br>
                         VD: URL <code>lumentree.net/dashboard/P250801055</code> → ID là <code>P250801055</code>
                     </div>
                     
@@ -4749,8 +4784,18 @@
             // Load saved device ID
             const savedDeviceId = localStorage.getItem('lumentreeDeviceId');
             if (savedDeviceId) {
+                document.getElementById('dashboardDeviceId').value = savedDeviceId;
                 document.getElementById('lumentreeDeviceId').value = savedDeviceId;
                 document.getElementById('manualDeviceId').value = savedDeviceId;
+            }
+            
+            // Also try to get deviceId from URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const deviceIdParam = urlParams.get('deviceId');
+            if (deviceIdParam) {
+                document.getElementById('dashboardDeviceId').value = deviceIdParam;
+                document.getElementById('lumentreeDeviceId').value = deviceIdParam;
+                document.getElementById('manualDeviceId').value = deviceIdParam;
             }
         }
         
@@ -5002,38 +5047,143 @@
         
         // Tab switching
         function switchLumentreeTab(tab) {
+            const tabDashboard = document.getElementById('lumentreeTabDashboard');
             const tabAuto = document.getElementById('lumentreeTabAuto');
             const tabManual = document.getElementById('lumentreeTabManual');
+            const btnDashboard = document.getElementById('tabDashboard');
             const btnAuto = document.getElementById('tabAuto');
             const btnManual = document.getElementById('tabManual');
             
-            // Sync device ID between tabs
+            // Reset all tabs
+            tabDashboard.style.display = 'none';
+            tabAuto.style.display = 'none';
+            tabManual.style.display = 'none';
+            btnDashboard.style.background = 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)';
+            btnAuto.style.background = 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)';
+            btnManual.style.background = 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)';
+            
+            // Sync device IDs
+            const dashboardDeviceId = document.getElementById('dashboardDeviceId').value.trim();
             const autoDeviceId = document.getElementById('lumentreeDeviceId').value.trim();
             const manualDeviceId = document.getElementById('manualDeviceId').value.trim();
+            const currentId = dashboardDeviceId || autoDeviceId || manualDeviceId;
             
-            if (tab === 'auto') {
+            if (tab === 'dashboard') {
+                tabDashboard.style.display = 'block';
+                btnDashboard.style.background = 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)';
+                if (currentId) document.getElementById('dashboardDeviceId').value = currentId;
+            } else if (tab === 'auto') {
                 tabAuto.style.display = 'block';
-                tabManual.style.display = 'none';
                 btnAuto.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
-                btnManual.style.background = 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)';
-                // Sync from manual to auto
-                if (manualDeviceId && !autoDeviceId) {
-                    document.getElementById('lumentreeDeviceId').value = manualDeviceId;
-                }
+                if (currentId) document.getElementById('lumentreeDeviceId').value = currentId;
             } else {
-                tabAuto.style.display = 'none';
                 tabManual.style.display = 'block';
-                btnAuto.style.background = 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)';
                 btnManual.style.background = 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)';
-                // Sync from auto to manual
-                if (autoDeviceId) {
-                    document.getElementById('manualDeviceId').value = autoDeviceId;
-                }
+                if (currentId) document.getElementById('manualDeviceId').value = currentId;
             }
             
             // Hide result section when switching
             document.getElementById('lumentreeResultSection').classList.remove('show');
         }
+        
+        // Fetch data from local Dashboard API
+        async function fetchDashboardData() {
+            const deviceId = document.getElementById('dashboardDeviceId').value.trim().toUpperCase();
+            const months = parseInt(document.getElementById('dashboardMonths').value) || 12;
+            
+            if (!deviceId) {
+                showNotification('⚠️ Vui lòng nhập Device ID!', 'error');
+                return;
+            }
+            
+            // Save device ID
+            localStorage.setItem('lumentreeDeviceId', deviceId);
+            document.getElementById('lumentreeDeviceId').value = deviceId;
+            document.getElementById('manualDeviceId').value = deviceId;
+            
+            try {
+                showNotification(`🔄 Đang lấy dữ liệu ${months} tháng từ Dashboard...`, 'info');
+                
+                const startTime = Date.now();
+                const response = await fetch(`/device/${deviceId}/monthly?months=${months}`);
+                
+                if (!response.ok) {
+                    throw new Error(`Server trả về lỗi: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                const elapsed = Date.now() - startTime;
+                
+                if (!Array.isArray(data) || data.length === 0) {
+                    throw new Error('Không có dữ liệu từ thiết bị này');
+                }
+                
+                lumentreeData = data;
+                
+                // Filter only months with data
+                const monthsWithData = data.filter(m => m.load > 0 || m.grid > 0 || m.pv > 0);
+                
+                // Display preview
+                let previewHtml = `
+                    <div style="background: rgba(245, 158, 11, 0.1); padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+                        <div style="font-size: 1.1em; font-weight: bold; color: #f59e0b; margin-bottom: 10px;">
+                            🏠 Dashboard: ${deviceId}
+                        </div>
+                        <div style="color: #cbd5e0;">
+                            📅 Tìm thấy <strong>${monthsWithData.length}</strong> tháng có dữ liệu (${elapsed}ms)
+                        </div>
+                    </div>
+                    <div style="max-height: 300px; overflow-y: auto;">
+                        <table style="width: 100%; border-collapse: collapse; font-size: 0.85em;">
+                            <thead>
+                                <tr style="background: rgba(245, 158, 11, 0.2);">
+                                    <th style="padding: 8px; text-align: left; border-bottom: 2px solid #f59e0b;">Tháng</th>
+                                    <th style="padding: 8px; text-align: right; border-bottom: 2px solid #f59e0b;">Load</th>
+                                    <th style="padding: 8px; text-align: right; border-bottom: 2px solid #f59e0b;">Grid</th>
+                                    <th style="padding: 8px; text-align: right; border-bottom: 2px solid #f59e0b;">PV</th>
+                                    <th style="padding: 8px; text-align: right; border-bottom: 2px solid #f59e0b;">Days</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+                
+                data.forEach(m => {
+                    const hasData = m.load > 0 || m.grid > 0 || m.pv > 0;
+                    const rowStyle = hasData ? '' : 'opacity: 0.4;';
+                    previewHtml += `
+                        <tr style="${rowStyle}">
+                            <td style="padding: 6px 8px; border-bottom: 1px solid #4a5568;">${m.month}</td>
+                            <td style="padding: 6px 8px; border-bottom: 1px solid #4a5568; text-align: right;">${m.load.toFixed(1)}</td>
+                            <td style="padding: 6px 8px; border-bottom: 1px solid #4a5568; text-align: right;">${m.grid.toFixed(1)}</td>
+                            <td style="padding: 6px 8px; border-bottom: 1px solid #4a5568; text-align: right; color: #f59e0b;">${m.pv.toFixed(1)}</td>
+                            <td style="padding: 6px 8px; border-bottom: 1px solid #4a5568; text-align: right;">${m.days || '-'}</td>
+                        </tr>
+                    `;
+                });
+                
+                previewHtml += `
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                
+                document.getElementById('lumentreePreview').innerHTML = previewHtml;
+                document.getElementById('lumentreeResultSection').classList.add('show');
+                
+                showNotification(`✅ Đã lấy ${monthsWithData.length} tháng từ Dashboard (${elapsed}ms)!`, 'success');
+                
+            } catch (error) {
+                console.error('Dashboard fetch error:', error);
+                showNotification(`❌ Lỗi: ${error.message}`, 'error');
+            }
+        }
+        
+        // Enter key handler for dashboard device ID
+        document.getElementById('dashboardDeviceId')?.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                fetchDashboardData();
+            }
+        });
         
         // Parse manual JSON input
         function parseManualLumentreeData() {
