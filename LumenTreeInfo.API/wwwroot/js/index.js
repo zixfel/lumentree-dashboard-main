@@ -1,10 +1,10 @@
 /**
  * Solar Monitor - Frontend JavaScript
- * Version: 08019 - Renamed labels + Day max voltage
+ * Version: 08020 - Fixed Day Max voltage tracking + renamed labels
  * 
  * Features:
  * - Real-time data via SignalR
- * - Battery Cell monitoring (16 cells) with Day Max voltage
+ * - Battery Cell monitoring with Day Max voltage (tracks highest in day)
  * - SOC (State of Charge) Chart
  * - Energy flow visualization with blink effect on value change
  * - Chart.js visualizations
@@ -65,6 +65,10 @@ document.addEventListener('DOMContentLoaded', function () {
     let previousValues = {};
     let previousCellValues = {};
     let lastCellUpdateTime = 0;
+    
+    // Track day max voltage for battery cells
+    let cellDayMaxVoltage = 0;
+    let cellDayMaxDate = new Date().toDateString();
 
     // ========================================
     // EVENT LISTENERS
@@ -529,7 +533,8 @@ document.addEventListener('DOMContentLoaded', function () {
         updateValue('cellMin', '--');
         updateValue('cellDiffValue', '--');
         // Reset day max tracker
-        previousValues['cellDayMax_value'] = '0';
+        cellDayMaxVoltage = 0;
+        cellDayMaxDate = new Date().toDateString();
         
         // Show placeholder in cell grid
         const cellGrid = document.getElementById('cellGrid');
@@ -587,17 +592,18 @@ document.addEventListener('DOMContentLoaded', function () {
         updateValue('cellMin', min.toFixed(3) + 'V');
         updateValue('cellDiffValue', diff.toFixed(3) + 'V');
         
-        // Update day max voltage from API data (if available)
-        if (data.maximumVoltage) {
-            updateValue('cellDayMax', data.maximumVoltage.toFixed(3) + 'V');
-        } else {
-            // Track max voltage during the session
-            const currentDayMax = parseFloat(previousValues['cellDayMax_value'] || '0');
-            if (max > currentDayMax) {
-                previousValues['cellDayMax_value'] = max.toString();
-                updateValue('cellDayMax', max.toFixed(3) + 'V');
-            }
+        // Track day max voltage - reset if new day
+        const today = new Date().toDateString();
+        if (today !== cellDayMaxDate) {
+            cellDayMaxDate = today;
+            cellDayMaxVoltage = 0;
         }
+        
+        // Update day max if current max is higher
+        if (max > cellDayMaxVoltage) {
+            cellDayMaxVoltage = max;
+        }
+        updateValue('cellDayMax', cellDayMaxVoltage.toFixed(3) + 'V');
         
         // Update diff color
         const diffEl = document.getElementById('cellDiffValue');
