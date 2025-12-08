@@ -200,6 +200,10 @@
                 </div>
                 <div class="flex items-center gap-2">
                     <span id="cellCountBadge" class="bg-teal-500 text-white px-2 py-0.5 rounded-full text-[10px] font-bold">-- cell</span>
+                    <span id="cellUpdateTime" class="text-[9px] text-slate-500 dark:text-slate-400">--:--:--</span>
+                    <button id="reloadCellBtn" class="p-1.5 bg-teal-500 hover:bg-teal-600 text-white rounded-lg transition-colors" title="Tải lại dữ liệu cell">
+                        <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+                    </button>
                     <div class="flex items-center gap-1 px-2 py-1 bg-white dark:bg-slate-700 rounded-lg shadow">
                         <span class="text-[10px] font-medium text-slate-600 dark:text-slate-300" id="toggleText">Ẩn</span>
                         <i data-lucide="chevron-up" class="w-4 h-4 text-teal-500 transition-transform" id="toggleIcon"></i>
@@ -223,7 +227,7 @@
                     <div class="text-sm sm:text-lg font-black text-green-700 dark:text-green-300" id="cellMax">--</div>
                 </div>
                 <div class="bg-gradient-to-br from-amber-100 to-yellow-100 dark:from-amber-900/40 dark:to-yellow-900/40 rounded-lg p-2 text-center border border-amber-200 dark:border-amber-700">
-                    <div class="text-[8px] font-bold text-amber-600 dark:text-amber-400 uppercase">Thấp Nhất</div>
+                    <div class="text-[8px] font-bold text-amber-600 dark:text-amber-400 uppercase">Thấp Nhất Hiện Tại</div>
                     <div class="text-sm sm:text-lg font-black text-amber-700 dark:text-amber-300" id="cellMin">--</div>
                 </div>
                 <div class="bg-gradient-to-br from-rose-100 to-red-100 dark:from-rose-900/40 dark:to-red-900/40 rounded-lg p-2 text-center border border-rose-200 dark:border-rose-700">
@@ -412,6 +416,6 @@
     <!-- SignalR Client Library -->
     <script src="https://unpkg.com/@@microsoft/signalr@@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link href="~/css/index.css?v=08020" rel="stylesheet" />
-    <script src="~/js/index.js?v=08020"></script>
+    <link href="~/css/index.css?v=08019" rel="stylesheet" />
+    <script src="~/js/index.js?v=08019"></script>
 }

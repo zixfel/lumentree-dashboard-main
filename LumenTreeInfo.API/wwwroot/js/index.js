@@ -1,10 +1,10 @@
 /**
  * Solar Monitor - Frontend JavaScript
- * Version: 08020 - Fixed Day Max voltage tracking + renamed labels
+ * Version: 08019 - Renamed labels + Day max voltage
  * 
  * Features:
  * - Real-time data via SignalR
- * - Battery Cell monitoring with Day Max voltage (tracks highest in day)
+ * - Battery Cell monitoring (16 cells) with Day Max voltage
  * - SOC (State of Charge) Chart
  * - Energy flow visualization with blink effect on value change
  * - Chart.js visualizations
@@ -65,10 +65,6 @@ document.addEventListener('DOMContentLoaded', function () {
     let previousValues = {};
     let previousCellValues = {};
     let lastCellUpdateTime = 0;
-    
-    // Track day max voltage for battery cells
-    let cellDayMaxVoltage = 0;
-    let cellDayMaxDate = new Date().toDateString();
 
     // ========================================
     // EVENT LISTENERS
@@ -120,7 +116,10 @@ document.addEventListener('DOMContentLoaded', function () {
     const toggleText = document.getElementById('toggleText');
     
     if (cellSectionHeader && cellSectionContent) {
-        cellSectionHeader.addEventListener('click', () => {
+        cellSectionHeader.addEventListener('click', (e) => {
+            // Ignore if clicking on reload button
+            if (e.target.closest('#reloadCellBtn')) return;
+            
             const isCollapsed = cellSectionContent.classList.toggle('hidden');
             if (toggleIcon) {
                 toggleIcon.style.transform = isCollapsed ? 'rotate(180deg)' : 'rotate(0deg)';
@@ -128,6 +127,15 @@ document.addEventListener('DOMContentLoaded', function () {
             if (toggleText) {
                 toggleText.textContent = isCollapsed ? 'Hiện' : 'Ẩn';
             }
+        });
+    }
+    
+    // Reload cell data button
+    const reloadCellBtn = document.getElementById('reloadCellBtn');
+    if (reloadCellBtn) {
+        reloadCellBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            requestCellDataReload();
         });
     }
 
@@ -533,8 +541,7 @@ document.addEventListener('DOMContentLoaded', function () {
         updateValue('cellMin', '--');
         updateValue('cellDiffValue', '--');
         // Reset day max tracker
-        cellDayMaxVoltage = 0;
-        cellDayMaxDate = new Date().toDateString();
+        previousValues['cellDayMax_value'] = '0';
         
         // Show placeholder in cell grid
         const cellGrid = document.getElementById('cellGrid');
@@ -566,6 +573,35 @@ document.addEventListener('DOMContentLoaded', function () {
         }, 5000);
     }
 
+    // Request cell data reload via SignalR
+    function requestCellDataReload() {
+        const reloadBtn = document.getElementById('reloadCellBtn');
+        if (reloadBtn) {
+            // Add spinning animation
+            reloadBtn.classList.add('animate-spin');
+            setTimeout(() => reloadBtn.classList.remove('animate-spin'), 1000);
+        }
+        
+        // Request new cell data from server
+        if (connection && connection.state === "Connected" && currentDeviceId) {
+            connection.invoke("RequestBatteryCellData", currentDeviceId)
+                .then(() => console.log("Requested cell data reload"))
+                .catch(err => console.error("Cell reload error:", err));
+        }
+        
+        console.log("Cell data reload requested");
+    }
+    
+    // Update cell update time display
+    function updateCellUpdateTime() {
+        const now = new Date();
+        const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+        const cellUpdateTimeEl = document.getElementById('cellUpdateTime');
+        if (cellUpdateTimeEl) {
+            cellUpdateTimeEl.textContent = timeStr;
+        }
+    }
+
     function updateBatteryCellDisplay(data) {
         if (!data || !data.cells) return;
 
@@ -573,6 +609,9 @@ document.addEventListener('DOMContentLoaded', function () {
         const validCells = cells.filter(v => v > 0);
 
         if (validCells.length === 0) return;
+        
+        // Update cell update time
+        updateCellUpdateTime();
 
         // Calculate statistics
         const avg = validCells.reduce((a, b) => a + b, 0) / validCells.length;
@@ -592,18 +631,17 @@ document.addEventListener('DOMContentLoaded', function () {
         updateValue('cellMin', min.toFixed(3) + 'V');
         updateValue('cellDiffValue', diff.toFixed(3) + 'V');
         
-        // Track day max voltage - reset if new day
-        const today = new Date().toDateString();
-        if (today !== cellDayMaxDate) {
-            cellDayMaxDate = today;
-            cellDayMaxVoltage = 0;
+        // Update day max voltage from API data (if available)
+        if (data.maximumVoltage) {
+            updateValue('cellDayMax', data.maximumVoltage.toFixed(3) + 'V');
+        } else {
+            // Track max voltage during the session
+            const currentDayMax = parseFloat(previousValues['cellDayMax_value'] || '0');
+            if (max > currentDayMax) {
+                previousValues['cellDayMax_value'] = max.toString();
+                updateValue('cellDayMax', max.toFixed(3) + 'V');
+            }
         }
-        
-        // Update day max if current max is higher
-        if (max > cellDayMaxVoltage) {
-            cellDayMaxVoltage = max;
-        }
-        updateValue('cellDayMax', cellDayMaxVoltage.toFixed(3) + 'V');
         
         // Update diff color
         const diffEl = document.getElementById('cellDiffValue');
