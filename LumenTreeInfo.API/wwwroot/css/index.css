@@ -1,6 +1,6 @@
 /**
  * Solar Monitor - Custom CSS
- * Version: 08019 - Renamed labels + Day max voltage
+ * Version: 08020 - Mobile 3-column layout for Energy Flow
  */
 
 /* ========================================
@@ -401,13 +401,52 @@ canvas:hover {
    ======================================== */
 
 @media (max-width: 640px) {
+    /* Energy Flow Grid - Keep 3 columns on mobile like desktop */
     #realTimeFlow .grid {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
     }
 
     #realTimeFlow .flow-item {
         height: auto;
-        min-height: 100px;
+        min-height: 90px;
+        padding: 6px 4px;
+    }
+    
+    /* Smaller icons and text on mobile */
+    #realTimeFlow .flow-item .w-10 {
+        width: 32px !important;
+        height: 32px !important;
+    }
+    
+    #realTimeFlow .flow-item .w-5 {
+        width: 16px !important;
+        height: 16px !important;
+    }
+    
+    /* Smaller battery icon container on mobile */
+    #realTimeFlow .battery-icon-container {
+        width: 32px !important;
+        height: 32px !important;
+        min-width: 32px !important;
+        min-height: 32px !important;
+    }
+    
+    #realTimeFlow .battery-percent-large {
+        font-size: 10px !important;
+    }
+    
+    /* Smaller text sizes on mobile */
+    #realTimeFlow .text-\[10px\] {
+        font-size: 8px !important;
+    }
+    
+    #realTimeFlow .text-sm {
+        font-size: 12px !important;
+    }
+    
+    #realTimeFlow .text-\[9px\] {
+        font-size: 7px !important;
     }
     
     .compact-search-bar {

@@ -105,79 +105,86 @@
 
 <!-- Real-Time Energy Flow -->
 <div id="realTimeFlow" class="hidden mb-4">
-    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md p-3 border border-slate-200 dark:border-slate-700">
-        <div class="flex items-center justify-between mb-3">
-            <h2 class="text-sm font-bold text-slate-800 dark:text-white flex items-center gap-2">
-                <i data-lucide="activity" class="w-4 h-4 text-green-500"></i>
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md p-2 sm:p-3 border border-slate-200 dark:border-slate-700">
+        <div class="flex items-center justify-between mb-2 sm:mb-3">
+            <h2 class="text-xs sm:text-sm font-bold text-slate-800 dark:text-white flex items-center gap-1 sm:gap-2">
+                <i data-lucide="activity" class="w-3 h-3 sm:w-4 sm:h-4 text-green-500"></i>
                 Luồng Năng Lượng Thời Gian Thực
             </h2>
         </div>
         
-        <div class="grid grid-cols-3 gap-2 sm:gap-3">
+        <!-- Energy Flow Grid - 3 columns, 2 rows -->
+        <div class="grid grid-cols-3 gap-1.5 sm:gap-3">
             <!-- Row 1: PV, Inverter, Grid -->
-            <div class="flow-item bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-xl p-2 sm:p-3 border border-amber-200 dark:border-amber-800">
+            <!-- Tấm Pin Mặt Trời -->
+            <div class="flow-item bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-lg sm:rounded-xl p-1.5 sm:p-3 border border-amber-200 dark:border-amber-800">
                 <div class="flex flex-col items-center">
-                    <div class="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center shadow-lg mb-1">
-                        <i data-lucide="sun" class="w-5 h-5 sm:w-6 sm:h-6 text-white"></i>
+                    <div class="w-8 h-8 sm:w-12 sm:h-12 bg-gradient-to-br from-amber-400 to-orange-500 rounded-lg sm:rounded-xl flex items-center justify-center shadow-md sm:shadow-lg mb-0.5 sm:mb-1">
+                        <i data-lucide="sun" class="w-4 h-4 sm:w-6 sm:h-6 text-white"></i>
                     </div>
-                    <div class="text-[10px] sm:text-xs font-medium text-amber-700 dark:text-amber-300">Tấm Pin Mặt Trời</div>
-                    <div class="text-sm sm:text-lg font-black text-amber-600 dark:text-amber-400" id="pv-power">--</div>
-                    <div class="text-[9px] sm:text-[10px] text-slate-500" id="pv-desc">--</div>
+                    <div class="text-[8px] sm:text-xs font-medium text-amber-700 dark:text-amber-300 text-center leading-tight">Tấm Pin<span class="hidden sm:inline"> Mặt Trời</span></div>
+                    <div class="text-xs sm:text-lg font-black text-amber-600 dark:text-amber-400" id="pv-power">--</div>
+                    <div class="text-[7px] sm:text-[10px] text-slate-500 truncate max-w-full" id="pv-desc">--</div>
                 </div>
             </div>
             
-            <div class="flow-item bg-gradient-to-br from-slate-50 to-gray-50 dark:from-slate-800 dark:to-gray-800 rounded-xl p-2 sm:p-3 border border-slate-200 dark:border-slate-700">
+            <!-- Biến Tần -->
+            <div class="flow-item bg-gradient-to-br from-slate-50 to-gray-50 dark:from-slate-800 dark:to-gray-800 rounded-lg sm:rounded-xl p-1.5 sm:p-3 border border-slate-200 dark:border-slate-700">
                 <div class="flex flex-col items-center">
-                    <div class="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-slate-400 to-gray-500 rounded-xl flex items-center justify-center shadow-lg mb-1">
-                        <i data-lucide="cpu" class="w-5 h-5 sm:w-6 sm:h-6 text-white"></i>
+                    <div class="w-8 h-8 sm:w-12 sm:h-12 bg-gradient-to-br from-slate-400 to-gray-500 rounded-lg sm:rounded-xl flex items-center justify-center shadow-md sm:shadow-lg mb-0.5 sm:mb-1">
+                        <i data-lucide="cpu" class="w-4 h-4 sm:w-6 sm:h-6 text-white"></i>
                     </div>
-                    <div class="text-[10px] sm:text-xs font-medium text-slate-600 dark:text-slate-300">Biến Tần</div>
-                    <div class="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300" id="inverter-type">--</div>
-                    <div class="text-[9px] sm:text-[10px] text-slate-500" id="device-temp">--</div>
+                    <div class="text-[8px] sm:text-xs font-medium text-slate-600 dark:text-slate-300 text-center leading-tight">Biến Tần</div>
+                    <div class="text-[9px] sm:text-sm font-bold text-slate-700 dark:text-slate-300 truncate max-w-full" id="inverter-type">--</div>
+                    <div class="text-[7px] sm:text-[10px] text-slate-500" id="device-temp">--</div>
                 </div>
             </div>
             
-            <div class="flow-item bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-900/20 dark:to-violet-900/20 rounded-xl p-2 sm:p-3 border border-purple-200 dark:border-purple-800">
+            <!-- Lưới Điện EVN -->
+            <div class="flow-item bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-900/20 dark:to-violet-900/20 rounded-lg sm:rounded-xl p-1.5 sm:p-3 border border-purple-200 dark:border-purple-800">
                 <div class="flex flex-col items-center">
-                    <div class="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-purple-400 to-violet-500 rounded-xl flex items-center justify-center shadow-lg mb-1">
-                        <i data-lucide="zap" class="w-5 h-5 sm:w-6 sm:h-6 text-white"></i>
+                    <div class="w-8 h-8 sm:w-12 sm:h-12 bg-gradient-to-br from-purple-400 to-violet-500 rounded-lg sm:rounded-xl flex items-center justify-center shadow-md sm:shadow-lg mb-0.5 sm:mb-1">
+                        <i data-lucide="zap" class="w-4 h-4 sm:w-6 sm:h-6 text-white"></i>
                     </div>
-                    <div class="text-[10px] sm:text-xs font-medium text-purple-700 dark:text-purple-300">Lưới Điện EVN</div>
-                    <div class="text-sm sm:text-lg font-black text-purple-600 dark:text-purple-400" id="grid-power">--</div>
-                    <div class="text-[9px] sm:text-[10px] text-slate-500" id="grid-voltage">--</div>
+                    <div class="text-[8px] sm:text-xs font-medium text-purple-700 dark:text-purple-300 text-center leading-tight">Lưới<span class="hidden sm:inline"> Điện</span> EVN</div>
+                    <div class="text-xs sm:text-lg font-black text-purple-600 dark:text-purple-400" id="grid-power">--</div>
+                    <div class="text-[7px] sm:text-[10px] text-slate-500" id="grid-voltage">--</div>
                 </div>
             </div>
             
             <!-- Row 2: Battery, Essential, Load -->
-            <div class="flow-item bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-900/20 dark:to-green-900/20 rounded-xl p-2 sm:p-3 border border-emerald-200 dark:border-emerald-800">
+            <!-- Pin Lưu Trữ -->
+            <div class="flow-item bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-900/20 dark:to-green-900/20 rounded-lg sm:rounded-xl p-1.5 sm:p-3 border border-emerald-200 dark:border-emerald-800">
                 <div class="flex flex-col items-center">
-                    <div class="battery-icon-container w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center shadow-lg mb-1 relative overflow-hidden border-2 border-emerald-400">
+                    <div class="battery-icon-container w-8 h-8 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl flex items-center justify-center shadow-md sm:shadow-lg mb-0.5 sm:mb-1 relative overflow-hidden border-2 border-emerald-400">
                         <div id="battery-fill" class="battery-fill absolute bottom-0 left-0 right-0 bg-emerald-400/40"></div>
-                        <span id="battery-percent-icon" class="battery-percent-large text-white relative z-10">--%</span>
+                        <span id="battery-percent-icon" class="battery-percent-large text-white relative z-10 text-[10px] sm:text-base">--%</span>
                     </div>
-                    <div class="text-[10px] sm:text-xs font-medium text-emerald-700 dark:text-emerald-300">Pin Lưu Trữ</div>
-                    <div id="battery-power" class="text-sm sm:text-lg font-black">--</div>
-                    <div id="battery-status-text" class="text-[9px] sm:text-[10px]">--</div>
+                    <div class="text-[8px] sm:text-xs font-medium text-emerald-700 dark:text-emerald-300 text-center leading-tight">Pin<span class="hidden sm:inline"> Lưu Trữ</span></div>
+                    <div id="battery-power" class="text-xs sm:text-lg font-black">--</div>
+                    <div id="battery-status-text" class="text-[7px] sm:text-[10px] truncate max-w-full">--</div>
                 </div>
             </div>
             
-            <div class="flow-item bg-gradient-to-br from-cyan-50 to-sky-50 dark:from-cyan-900/20 dark:to-sky-900/20 rounded-xl p-2 sm:p-3 border border-cyan-200 dark:border-cyan-800">
+            <!-- Điện Dự Phòng -->
+            <div class="flow-item bg-gradient-to-br from-cyan-50 to-sky-50 dark:from-cyan-900/20 dark:to-sky-900/20 rounded-lg sm:rounded-xl p-1.5 sm:p-3 border border-cyan-200 dark:border-cyan-800">
                 <div class="flex flex-col items-center">
-                    <div class="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-cyan-400 to-sky-500 rounded-xl flex items-center justify-center shadow-lg mb-1">
-                        <i data-lucide="plug" class="w-5 h-5 sm:w-6 sm:h-6 text-white"></i>
+                    <div class="w-8 h-8 sm:w-12 sm:h-12 bg-gradient-to-br from-cyan-400 to-sky-500 rounded-lg sm:rounded-xl flex items-center justify-center shadow-md sm:shadow-lg mb-0.5 sm:mb-1">
+                        <i data-lucide="plug" class="w-4 h-4 sm:w-6 sm:h-6 text-white"></i>
                     </div>
-                    <div class="text-[10px] sm:text-xs font-medium text-cyan-700 dark:text-cyan-300">Điện Dự Phòng</div>
-                    <div class="text-sm sm:text-lg font-black text-cyan-600 dark:text-cyan-400" id="essential-power">--</div>
+                    <div class="text-[8px] sm:text-xs font-medium text-cyan-700 dark:text-cyan-300 text-center leading-tight">Dự Phòng</div>
+                    <div class="text-xs sm:text-lg font-black text-cyan-600 dark:text-cyan-400" id="essential-power">--</div>
                 </div>
             </div>
             
-            <div class="flow-item bg-gradient-to-br from-rose-50 to-red-50 dark:from-rose-900/20 dark:to-red-900/20 rounded-xl p-2 sm:p-3 border border-rose-200 dark:border-rose-800">
+            <!-- Tiêu Thụ -->
+            <div class="flow-item bg-gradient-to-br from-rose-50 to-red-50 dark:from-rose-900/20 dark:to-red-900/20 rounded-lg sm:rounded-xl p-1.5 sm:p-3 border border-rose-200 dark:border-rose-800">
                 <div class="flex flex-col items-center">
-                    <div class="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-rose-400 to-red-500 rounded-xl flex items-center justify-center shadow-lg mb-1">
-                        <i data-lucide="home" class="w-5 h-5 sm:w-6 sm:h-6 text-white"></i>
+                    <div class="w-8 h-8 sm:w-12 sm:h-12 bg-gradient-to-br from-rose-400 to-red-500 rounded-lg sm:rounded-xl flex items-center justify-center shadow-md sm:shadow-lg mb-0.5 sm:mb-1">
+                        <i data-lucide="home" class="w-4 h-4 sm:w-6 sm:h-6 text-white"></i>
                     </div>
-                    <div class="text-[10px] sm:text-xs font-medium text-rose-700 dark:text-rose-300">Tiêu Thụ</div>
-                    <div class="text-sm sm:text-lg font-black text-rose-600 dark:text-rose-400" id="load-power">--</div>
+                    <div class="text-[8px] sm:text-xs font-medium text-rose-700 dark:text-rose-300 text-center leading-tight">Tiêu Thụ</div>
+                    <div class="text-xs sm:text-lg font-black text-rose-600 dark:text-rose-400" id="load-power">--</div>
                 </div>
             </div>
         </div>
@@ -416,6 +423,6 @@
     <!-- SignalR Client Library -->
     <script src="https://unpkg.com/@@microsoft/signalr@@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link href="~/css/index.css?v=08019" rel="stylesheet" />
-    <script src="~/js/index.js?v=08019"></script>
+    <link href="~/css/index.css?v=08020" rel="stylesheet" />
+    <script src="~/js/index.js?v=08020"></script>
 }
