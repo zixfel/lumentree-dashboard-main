@@ -706,6 +706,12 @@ canvas:hover {
         grid-template-columns: repeat(3, 1fr);
         gap: 0.375rem; /* 6px */
     }
+    
+    /* Hide compact search bar on mobile - not sticky */
+    #compactSearch {
+        position: relative !important;
+        top: auto !important;
+    }
 }
 
 /* ========================================
