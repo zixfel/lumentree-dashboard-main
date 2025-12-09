@@ -524,17 +524,17 @@ document.addEventListener('DOMContentLoaded', function () {
         // Update battery percent display in icon - with blink
         updateValue('battery-percent-icon', `${batteryPercent}%`);
         
-        // Update battery fill level
+        // Update battery fill level - horizontal bar like phone battery
         const batteryFill = document.getElementById('battery-fill');
         if (batteryFill) {
-            batteryFill.style.height = `${batteryPercent}%`;
-            // Change color based on level
-            if (batteryPercent < 20) {
-                batteryFill.className = 'battery-fill absolute bottom-0 left-0 right-0 bg-red-400/60';
-            } else if (batteryPercent < 50) {
-                batteryFill.className = 'battery-fill absolute bottom-0 left-0 right-0 bg-amber-400/60';
+            batteryFill.style.width = `${batteryPercent}%`;
+            // Change color based on level: Red 0-20%, Yellow 21-50%, Green 51-100%
+            if (batteryPercent <= 20) {
+                batteryFill.className = 'absolute left-0 top-0 bottom-0 bg-red-500 transition-all duration-500';
+            } else if (batteryPercent <= 50) {
+                batteryFill.className = 'absolute left-0 top-0 bottom-0 bg-yellow-500 transition-all duration-500';
             } else {
-                batteryFill.className = 'battery-fill absolute bottom-0 left-0 right-0 bg-emerald-400/60';
+                batteryFill.className = 'absolute left-0 top-0 bottom-0 bg-green-500 transition-all duration-500';
             }
         }
         
