@@ -306,6 +306,63 @@ public class HomeController : Controller
     }
 
     /// <summary>
+    /// Debug endpoint to test connectivity to Lumentree API
+    /// </summary>
+    [Route("/debug/connectivity")]
+    public async Task<IActionResult> TestConnectivity()
+    {
+        var results = new Dictionary<string, object>();
+        
+        // Test 1: DNS Resolution
+        try
+        {
+            var addresses = await System.Net.Dns.GetHostAddressesAsync("lesvr.suntcn.com");
+            results["dns_resolution"] = new { 
+                success = true, 
+                addresses = addresses.Select(a => a.ToString()).ToArray() 
+            };
+        }
+        catch (Exception ex)
+        {
+            results["dns_resolution"] = new { success = false, error = ex.Message };
+        }
+        
+        // Test 2: HTTP Connection to Lumentree API
+        try
+        {
+            using var httpClient = new HttpClient();
+            httpClient.Timeout = TimeSpan.FromSeconds(10);
+            var response = await httpClient.GetAsync("http://lesvr.suntcn.com/lesvr/getServerTime");
+            var content = await response.Content.ReadAsStringAsync();
+            results["lumentree_api"] = new { 
+                success = response.IsSuccessStatusCode, 
+                status_code = (int)response.StatusCode,
+                response = content.Length > 500 ? content.Substring(0, 500) : content
+            };
+        }
+        catch (Exception ex)
+        {
+            results["lumentree_api"] = new { success = false, error = ex.Message };
+        }
+        
+        // Test 3: Token Generation
+        try
+        {
+            var token = await _client.GenerateToken("P250801055");
+            results["token_generation"] = new { 
+                success = !string.IsNullOrEmpty(token), 
+                token_preview = token?.Substring(0, Math.Min(8, token?.Length ?? 0)) + "..." 
+            };
+        }
+        catch (Exception ex)
+        {
+            results["token_generation"] = new { success = false, error = ex.Message };
+        }
+        
+        return Json(results);
+    }
+
+    /// <summary>
     /// Returns an error view
     /// </summary>
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
