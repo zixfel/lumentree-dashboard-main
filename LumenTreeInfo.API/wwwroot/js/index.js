@@ -1,6 +1,6 @@
 /**
  * Solar Monitor - Frontend JavaScript
- * Version: 08019 - Renamed labels + Day max voltage
+ * Version: 08022 - Battery cell: always show section, display waiting message until real MQTT data arrives
  * 
  * Features:
  * - Real-time data via SignalR
@@ -65,6 +65,10 @@ document.addEventListener('DOMContentLoaded', function () {
     let previousValues = {};
     let previousCellValues = {};
     let lastCellUpdateTime = 0;
+    
+    // Battery cell communication state
+    let hasCellData = false; // True only after receiving REAL data from MQTT
+    let cellDataReceived = false; // Flag to track if we ever received cell data
 
     // ========================================
     // EVENT LISTENERS
@@ -381,13 +385,17 @@ document.addEventListener('DOMContentLoaded', function () {
     // ========================================
     
     function processData(data) {
-        // Show sections
+        // Show all sections including batteryCellSection
         showElement('deviceInfo');
         showElement('summaryStats');
         showElement('chart-section');
         showElement('realTimeFlow');
-        showElement('batteryCellSection');
+        showElement('batteryCellSection'); // Always show, will display waiting message
         showElement('socChartSection');
+        
+        // Reset cell data state for new device
+        hasCellData = false;
+        cellDataReceived = false;
 
         // Update device info
         updateDeviceInfo(data.deviceInfo);
@@ -403,8 +411,8 @@ document.addEventListener('DOMContentLoaded', function () {
         // Update charts
         updateCharts(data);
 
-        // Initialize battery cell display with default values
-        initializeBatteryCells();
+        // Initialize battery cells with waiting message (no mock data)
+        initializeBatteryCellsWaiting();
         
         // Initialize SOC chart with demo data (will be replaced by real-time data)
         initializeSOCChart();
@@ -533,44 +541,49 @@ document.addEventListener('DOMContentLoaded', function () {
     // BATTERY CELL DISPLAY
     // ========================================
     
-    function initializeBatteryCells() {
-        // Initialize with placeholder values
-        updateValue('cellDayMax', '--');
-        updateValue('cellAvg', '--');
-        updateValue('cellMax', '--');
-        updateValue('cellMin', '--');
-        updateValue('cellDiffValue', '--');
+    // Initialize battery cells with waiting message (always visible, no mock data)
+    function initializeBatteryCellsWaiting() {
+        // Reset values to waiting state
+        const cellDayMax = document.getElementById('cellDayMax');
+        const cellAvg = document.getElementById('cellAvg');
+        const cellMax = document.getElementById('cellMax');
+        const cellMin = document.getElementById('cellMin');
+        const cellDiffValue = document.getElementById('cellDiffValue');
+        const cellCountBadge = document.getElementById('cellCountBadge');
+        const cellUpdateTime = document.getElementById('cellUpdateTime');
+        
+        if (cellDayMax) cellDayMax.textContent = '--';
+        if (cellAvg) cellAvg.textContent = '--';
+        if (cellMax) cellMax.textContent = '--';
+        if (cellMin) cellMin.textContent = '--';
+        if (cellDiffValue) {
+            cellDiffValue.textContent = '--';
+            cellDiffValue.className = 'text-sm sm:text-lg font-black text-slate-500';
+        }
+        if (cellCountBadge) cellCountBadge.textContent = '-- cell';
+        if (cellUpdateTime) cellUpdateTime.textContent = '--:--:--';
+        
         // Reset day max tracker
         previousValues['cellDayMax_value'] = '0';
         
-        // Show placeholder in cell grid
+        // Show waiting message in cell grid
         const cellGrid = document.getElementById('cellGrid');
         if (cellGrid) {
             cellGrid.innerHTML = `
-                <div class="cell-placeholder bg-slate-100 dark:bg-slate-800 rounded-lg h-16 flex items-center justify-center">
-                    <span class="text-slate-400 text-xs">Đang chờ dữ liệu cell...</span>
+                <div class="cell-placeholder bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 rounded-xl p-6 flex flex-col items-center justify-center gap-3 border-2 border-dashed border-slate-300 dark:border-slate-600">
+                    <div class="animate-pulse flex items-center gap-2">
+                        <svg class="w-5 h-5 text-teal-500 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span class="text-slate-500 dark:text-slate-400 text-sm font-medium">Đang chờ dữ liệu cell volt...</span>
+                    </div>
+                    <p class="text-xs text-slate-400 dark:text-slate-500 text-center">Dữ liệu sẽ hiển thị khi nhận được từ thiết bị qua MQTT</p>
                 </div>
             `;
         }
-
-        // Generate mock data for testing if no real data after 5 seconds
-        setTimeout(() => {
-            const cellGridCheck = document.getElementById('cellGrid');
-            if (cellGridCheck && cellGridCheck.querySelector('.cell-placeholder')) {
-                // Generate mock cell data (16 cells typical for LiFePO4)
-                const mockCells = [];
-                const baseVoltage = 3.28; // ~3.28V per cell for LiFePO4
-                for (let i = 0; i < 16; i++) {
-                    // Random variation ±0.05V
-                    const variation = (Math.random() - 0.5) * 0.1;
-                    mockCells.push(baseVoltage + variation);
-                }
-                
-                const mockData = { cells: mockCells };
-                updateBatteryCellDisplay(mockData);
-                console.log("Loaded mock battery cell data for demo");
-            }
-        }, 5000);
+        
+        console.log("Battery cell section initialized - waiting for real MQTT data");
     }
 
     // Request cell data reload via SignalR
@@ -608,7 +621,18 @@ document.addEventListener('DOMContentLoaded', function () {
         const cells = data.cells;
         const validCells = cells.filter(v => v > 0);
 
-        if (validCells.length === 0) return;
+        // If no valid cells, show "no communication" message
+        if (validCells.length === 0) {
+            console.log("No valid cell data - device may not support cell monitoring");
+            showNoCellCommunication();
+            return;
+        }
+        
+        // Mark that we have received real cell data
+        cellDataReceived = true;
+        hasCellData = true;
+        
+        console.log("Received real cell data from MQTT:", validCells.length, "cells");
         
         // Update cell update time
         updateCellUpdateTime();
@@ -718,6 +742,28 @@ document.addEventListener('DOMContentLoaded', function () {
             
             cellGrid.innerHTML = gridHtml;
         }
+    }
+    
+    // Show message when device doesn't support cell monitoring
+    function showNoCellCommunication() {
+        const cellGrid = document.getElementById('cellGrid');
+        if (cellGrid) {
+            cellGrid.innerHTML = `
+                <div class="cell-placeholder bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-xl p-6 flex flex-col items-center justify-center gap-3 border-2 border-dashed border-amber-300 dark:border-amber-700">
+                    <div class="flex items-center gap-2">
+                        <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                        </svg>
+                        <span class="text-amber-600 dark:text-amber-400 text-sm font-medium">Thiết bị không hỗ trợ giám sát cell</span>
+                    </div>
+                    <p class="text-xs text-amber-500 dark:text-amber-500 text-center">Pin của thiết bị này không có tính năng giao tiếp cell voltage</p>
+                </div>
+            `;
+        }
+        
+        // Reset stats
+        const cellCountBadge = document.getElementById('cellCountBadge');
+        if (cellCountBadge) cellCountBadge.textContent = 'N/A';
     }
 
     // ========================================
