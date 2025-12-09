@@ -1,6 +1,6 @@
 /**
  * Solar Monitor - Custom CSS
- * Version: 08020 - Mobile 3-column layout for Energy Flow
+ * Version: 08029 - Mobile 3-column layout for Summary Stats (Năng Lượng - Pin Lưu Trữ - Nguồn Điện)
  */
 
 /* ========================================
@@ -700,10 +700,11 @@ canvas:hover {
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
 }
 
-/* Responsive for mobile */
+/* Responsive for mobile - Keep 3 columns on mobile too */
 @media (max-width: 640px) {
     #summaryStats .grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.375rem; /* 6px */
     }
 }
 
