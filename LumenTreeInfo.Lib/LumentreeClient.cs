@@ -2,6 +2,8 @@
 using RestSharp;
 using RestSharp.Serializers.Json;
 using Serilog;
+using System.Net;
+using System.Net.Http;
 
 namespace LumenTreeInfo.Lib;
 
@@ -42,20 +44,40 @@ public class LumentreeClient
         _wifiStatus = "1";
         _cacheService = cacheService;
 
-        // Initialize and configure REST client with extended timeout for Railway
+        // Create HttpClient with proper configuration for Railway
+        var httpClientHandler = new HttpClientHandler
+        {
+            AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
+            AllowAutoRedirect = true,
+            MaxAutomaticRedirections = 5
+        };
+        
+        var httpClient = new HttpClient(httpClientHandler)
+        {
+            Timeout = TimeSpan.FromSeconds(30)
+        };
+        
+        // Add default headers to HttpClient
+        httpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Linux; Android 10; SM-G970F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.120 Mobile Safari/537.36");
+        httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
+        httpClient.DefaultRequestHeaders.Add("Accept-Language", "en-US,en;q=0.9");
+        httpClient.DefaultRequestHeaders.Add("Accept-Encoding", "gzip, deflate");
+
+        // Initialize REST client with custom HttpClient
         var options = new RestClientOptions(BaseUrl)
         {
-            MaxTimeout = 30000, // 30 seconds timeout
+            MaxTimeout = 30000,
             ThrowOnAnyError = false,
-            // Explicitly set encoding
             Encoding = System.Text.Encoding.UTF8
         };
+        
         _client = new RestClient(
+            httpClient,
             options,
             configureSerialization: s => s.UseSystemTextJson(new System.Text.Json.JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true,
-                PropertyNamingPolicy = null // Keep original casing
+                PropertyNamingPolicy = null
             })
         );
         ConfigureClient();
