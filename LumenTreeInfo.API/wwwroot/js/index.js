@@ -553,6 +553,11 @@ document.addEventListener('DOMContentLoaded', function () {
         } else {
             updateValueHTML('battery-power', `<span class="text-green-600 dark:text-green-400">+${Math.abs(data.batteryValue)}W</span>`);
         }
+        
+        // Battery Voltage (Điện Áp Pin giao tiếp) - display in Cell section
+        if (data.batteryVoltage) {
+            updateValue('batteryVoltageDisplay', `${data.batteryVoltage.toFixed(1)}V`);
+        }
 
         // Other values - with blink effect
         updateValue('device-temp', `${data.deviceTempValue}°C`);
