@@ -1,241 +1,304 @@
-# LumenTreeInfo
-<div align="right">
-  <a href="README.md">English</a> | <a href="README.vi.md">Tiếng Việt</a>
+# LightEarth Web Pro - Giám Sát Năng Lượng Mặt Trời
+
+<div align="center">
+
+![Version](https://img.shields.io/badge/version-08052-blue.svg)
+![.NET](https://img.shields.io/badge/.NET-8.0-purple.svg)
+![License](https://img.shields.io/badge/license-MIT-green.svg)
+![Railway](https://img.shields.io/badge/deploy-Railway-black.svg)
+
+**Hệ thống giám sát năng lượng mặt trời thời gian thực cho biến tần Lumentree**
+
+[Demo trực tiếp](https://solar-monitor-dashboard-production.up.railway.app/?deviceId=P250812032) | [Báo cáo lỗi](https://github.com/zixfel/lumentree-dashboard-main/issues) | [Yêu cầu tính năng](https://github.com/zixfel/lumentree-dashboard-main/issues)
+
 </div>
 
-A comprehensive web application for monitoring and visualizing energy data from Lumentree solar power systems. This project provides an intuitive interface to track solar production, battery usage, power consumption, and grid interactions in real-time.
+---
 
-![LumenTreeInfo Dashboard](https://github.com/nsknet/lumentree-dashboard/blob/main/screenshots/screenshot1.png?raw=true)
+## Giới thiệu
 
-## Features
+**LightEarth Web Pro** là ứng dụng web toàn diện để giám sát và trực quan hóa dữ liệu năng lượng từ hệ thống điện mặt trời Lumentree. Ứng dụng cung cấp giao diện trực quan để theo dõi sản lượng điện mặt trời, tình trạng pin, tiêu thụ điện và tương tác lưới điện theo thời gian thực.
 
-- **Real-time monitoring** of solar energy systems via MQTT protocol
-- **Historical data visualization** with interactive charts for:
-  - PV (Photovoltaic) energy production
-  - Battery charging and discharging
-  - Home power consumption
-  - Grid interaction (import/export)
-  - Essential load consumption
-- **Device information** display with status indicators
-- **Date navigation** to review historical data
-- **Responsive design** optimized for desktop and mobile devices
-- **SignalR** integration for live data updates without page refresh
+### Tính năng nổi bật
 
-## Technology Stack
+- **Giám sát thời gian thực** qua giao thức MQTT
+- **Luồng năng lượng trực quan** - Hiển thị dòng chảy năng lượng giữa PV, Pin, Lưới điện và Tải
+- **Biểu đồ tương tác** cho dữ liệu lịch sử
+- **Điện áp cell pin** - Theo dõi từng cell pin với độ lệch và cảnh báo
+- **Giao diện responsive** - Tối ưu cho desktop và mobile
+- **Dark/Light mode** - Chế độ sáng/tối tự động
+- **Cập nhật SignalR** - Dữ liệu cập nhật không cần tải lại trang
 
-- **Backend**: ASP.NET Core 8.0
-- **Frontend**: HTML, JavaScript, Tailwind CSS
-- **Charts**: Chart.js for data visualization
-- **API Integration**: 
-  - RestSharp for Lumentree cloud API communication
-  - MQTTnet for direct MQTT communication with devices
-- **Real-time Updates**: SignalR for pushing live data to clients
-- **Logging**: Serilog for comprehensive application logging
+---
 
-## MQTT Data Collection
+## Ảnh chụp màn hình
 
-The application connects to Lumentree solar inverters via MQTT to obtain real-time data. Below are the key metrics collected:
+### Giao diện chính - Luồng năng lượng thời gian thực
 
-### Device Information
-- Device ID and type
-- Firmware version
-- Controller version
-- Device temperature
-- Working mode
-- Online status
+```
+┌─────────────────────────────────────────────────────────────┐
+│  ⚡ Giám Sát Năng Lượng Mặt Trời - LightEarth Web Pro       │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│    ☀️ PV1        ☀️ PV2           🔋 Pin         🏠 Tải    │
+│    1200W         800W             67%            450W       │
+│       ↓            ↓               ↕              ↑        │
+│    ┌────────────────────────────────────────────────┐      │
+│    │              BIẾN TẦN LUMENTREE                │      │
+│    │              SUNT-6.0kW-T                      │      │
+│    │              Nhiệt độ: 42°C                    │      │
+│    └────────────────────────────────────────────────┘      │
+│                          ↕                                  │
+│                    ⚡ Lưới EVN                              │
+│                       224V                                  │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
 
-### PV (Solar) Production
-- PV1 and PV2 voltage (V)
-- PV1 and PV2 power (W)
-- Total PV power production
+### Biểu đồ sản lượng điện trong ngày
 
-![PV](https://github.com/nsknet/lumentree-dashboard/blob/main/screenshots/screenshot2.png?raw=true)
+```
+Công suất (W)
+    │
+3000│        ████████
+    │      ██        ██
+2000│    ██            ██
+    │  ██                ██
+1000│██                    ██
+    │                        ██
+   0├──────────────────────────────
+    6h   9h   12h   15h   18h   21h
+```
 
-### Battery Metrics
-- Battery voltage (V)
-- Battery charge percentage (%)
-- Battery power flow (W) - charging/discharging status
-- Battery current (A)
-- Individual cell voltages (for supported devices)
+### Điện áp Cell Pin
 
-![Battery Metrics](https://github.com/nsknet/lumentree-dashboard/blob/main/screenshots/screenshot3.png?raw=true)
+```
+┌──────────────────────────────────────────────────────┐
+│  Điện Áp Pin │ Trung Bình │ Cao Nhất │ Thấp Nhất │ Độ Lệch │
+│    52.3V     │   3.28V    │  3.31V   │   3.25V   │  0.06V  │
+├──────────────────────────────────────────────────────┤
+│ Cell 1: 3.28V │ Cell 2: 3.29V │ Cell 3: 3.27V │ ...    │
+│ Cell 4: 3.31V │ Cell 5: 3.28V │ Cell 6: 3.25V │ ...    │
+└──────────────────────────────────────────────────────┘
+```
+
+---
+
+## Công nghệ sử dụng
+
+| Thành phần | Công nghệ |
+|------------|-----------|
+| **Backend** | ASP.NET Core 8.0 |
+| **Frontend** | HTML, JavaScript, Tailwind CSS |
+| **Biểu đồ** | Chart.js |
+| **Real-time** | SignalR WebSocket |
+| **MQTT** | MQTTnet |
+| **API** | RestSharp |
+| **Logging** | Serilog |
+| **Deploy** | Railway |
+
+---
+
+## Dữ liệu thu thập qua MQTT
+
+### Thông tin thiết bị
+- ID thiết bị và loại
+- Phiên bản firmware
+- Nhiệt độ biến tần
+- Chế độ hoạt động (Hòa lưới/Độc lập/UPS)
+- Trạng thái online
+
+### Sản lượng PV (Quang điện)
+- Điện áp PV1 và PV2 (V)
+- Công suất PV1 và PV2 (W)
+- Tổng công suất PV
+
+### Thông số Pin
+- Điện áp pin tổng (V)
+- Phần trăm sạc (%)
+- Công suất sạc/xả (W)
+- Dòng điện pin (A)
+- Điện áp từng cell (V)
+- Trạng thái: Đang sạc / Đang xả / Chờ
 
 ### AC Output/Input
-- AC output voltage (V)
-- AC output frequency (Hz)
-- AC output power (W)
-- AC input voltage (V)
-- AC input frequency (Hz)
-- Grid power flow (W) - import/export status
+- Điện áp AC đầu ra (V)
+- Tần số AC (Hz)
+- Công suất AC (W)
+- Điện áp lưới điện (V)
+- Công suất lưới (W) - Nhập/Xuất
 
-### Consumption Data
-- Home load consumption (W)
-- Essential load consumption (W)
+### Dữ liệu tiêu thụ
+- Tải cổng load (W) - Essential Load
+- Tải hòa lưới (W) - Home Load
 
-### Energy Flow Analysis
-- Self-consumption ratio (%)
-- Energy flow visualization between PV, battery, grid, and home
+---
 
-## Getting Started
+## Cài đặt
 
-### Prerequisites
+### Yêu cầu
 
-- **.NET 8.0 SDK** or later
-- **Visual Studio 2022** or **Visual Studio Code**
-- **Git** for cloning the repository
+- **.NET 8.0 SDK** trở lên
+- **Git**
 
-### Installation
+### Hướng dẫn cài đặt
 
-1. **Clone the repository**
-   ```
-   git clone https://github.com/nsknet/lumentree-dashboard.git
-   cd lumentree-dashboard
+1. **Clone repository**
+   ```bash
+   git clone https://github.com/zixfel/lumentree-dashboard-main.git
+   cd lumentree-dashboard-main
    ```
 
 2. **Restore dependencies**
-   ```
+   ```bash
    dotnet restore
    ```
 
-3. **Build the project**
-   ```
+3. **Build project**
+   ```bash
    dotnet build
    ```
 
-4. **Configure application settings**
-   
-   Edit `LumenTreeInfo.API/appsettings.json` to set:
-   - Default User ID (used for MQTT authentication)
-   - Any other configuration parameters
-
-   ```json
-   {
-     "Logging": {
-       "LogLevel": {
-         "Default": "Information",
-         "Microsoft.AspNetCore": "Warning"
-       }
-     },
-     "SolarMonitor": {
-       "UserId": "YOUR_USER_ID"
-     },
-     "AllowedHosts": "*"
-   }
-   ```
-
-### Running the Application
-
-#### Web Application
-
-1. **Run the web application**
-   ```
+4. **Chạy ứng dụng**
+   ```bash
    dotnet run --project LumenTreeInfo.API
    ```
 
-2. **Access the application at**:
-   - https://localhost:7077 (with HTTPS)
-   - http://localhost:5165 (with HTTP)
+5. **Truy cập**
+   - HTTP: http://localhost:5165
+   - HTTPS: https://localhost:7077
 
-3. **Enter your device ID** in the search field, select a date, and click "Xem" (View) to load data
+---
 
-#### Command Line Utility
-
-For testing or direct console monitoring:
+## Cấu trúc dự án
 
 ```
-dotnet run --project LumenTreeInfo.Cmd
+lumentree-dashboard-main/
+├── LumenTreeInfo.API/          # Web Application
+│   ├── Controllers/            # API Controllers
+│   ├── Views/                  # Razor Views
+│   ├── wwwroot/               # Static files (CSS, JS, Icons)
+│   │   ├── css/
+│   │   ├── js/
+│   │   └── icons/             # Icon biến tần, pin, lưới...
+│   └── DeviceHub.cs           # SignalR Hub
+├── LumenTreeInfo.Lib/          # Core Library
+│   ├── SolarInverterMonitor.cs # MQTT Client
+│   ├── LumentreeClient.cs      # API Client
+│   └── Models/                 # Data Models
+├── LumenTreeInfo.Cmd/          # Command Line Tool
+└── README.md
 ```
 
-The command line utility will start monitoring the configured device(s) and output data to the console.
+---
 
-### Building for Production
+## Triển khai Production
 
+### Railway (Khuyến nghị)
+
+1. Fork repository về tài khoản GitHub của bạn
+2. Đăng nhập [Railway](https://railway.app)
+3. Tạo project mới từ GitHub repo
+4. Railway sẽ tự động detect .NET và deploy
+
+### Docker
+
+```dockerfile
+FROM mcr.microsoft.com/dotnet/aspnet:8.0
+WORKDIR /app
+COPY ./publish .
+EXPOSE 5165
+ENTRYPOINT ["dotnet", "LumenTreeInfo.API.dll"]
 ```
+
+### Build Production
+
+```bash
 dotnet publish LumenTreeInfo.API -c Release -o ./publish
 ```
 
-This will create a production-ready build in the `./publish` directory.
+---
 
-## Project Structure
+## Cấu hình
 
-- **LumenTreeInfo.API**: Web application with controllers, views, and API endpoints
-- **LumenTreeInfo.Lib**: Core library with MQTT client, API clients, and data models
-- **LumenTreeInfo.Cmd**: Command-line utility for direct device monitoring
-
-## Monitoring Multiple Devices
-
-The application supports monitoring multiple devices simultaneously. Devices can be added:
-
-1. Through the web interface by entering different device IDs
-2. By configuring default devices in the code:
-
-```csharp
-// In Program.cs or during service configuration
-monitor.AddDevice("P123456789");
-monitor.AddDevice("H987654321");
-```
-
-## Development Notes
-
-- The application is designed to be responsive across various device sizes
-- Real-time updates occur via SignalR whenever new data is received over MQTT
-- Historical data is fetched from the Lumentree cloud API
-- The application caches API responses to minimize requests
-- Debug logging can be enabled by adjusting log levels in appsettings.json
-
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Cannot connect to MQTT broker**
-   - Verify internet connectivity
-   - Check that the MQTT credentials are correct
-   - Ensure the device ID is valid
-
-2. **No data appearing in charts**
-   - Verify the date selected has available data
-   - Check console for any API or parsing errors
-   - Ensure the device was online during the selected date
-
-3. **SignalR connection failing**
-   - Check for browser console errors
-   - Verify that WebSockets are not blocked by network policies
-
-### Logging
-
-The application uses Serilog for comprehensive logging. Logs are written to:
-- Console output
-- Rolling log files in the `logs` directory
-
-To increase log verbosity, adjust the minimum level in `appsettings.json`:
+### appsettings.json
 
 ```json
-"Serilog": {
-  "MinimumLevel": {
-    "Default": "Debug",
-    "Override": {
-      "Microsoft": "Warning"
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
     }
-  }
+  },
+  "SolarMonitor": {
+    "UserId": "YOUR_USER_ID",
+    "MqttBroker": "lesvr.suntcn.com",
+    "MqttPort": 1886
+  },
+  "AllowedHosts": "*"
 }
 ```
 
-## License
+---
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+## Khắc phục sự cố
 
-## Acknowledgments
+### Không kết nối được MQTT
+- Kiểm tra kết nối internet
+- Xác minh Device ID hợp lệ
+- Kiểm tra MQTT broker: `lesvr.suntcn.com:1886`
 
-- MQTTnet library for MQTT communication
-- Chart.js for data visualization
-- Tailwind CSS for responsive design
-- RestSharp for simplified API requests
-- The Lumentree API for providing solar system data
+### Không có dữ liệu biểu đồ
+- Kiểm tra ngày đã chọn có dữ liệu
+- Xác minh thiết bị online trong ngày đó
+- Kiểm tra Console browser để xem lỗi
+
+### SignalR không kết nối
+- Kiểm tra WebSocket không bị chặn
+- Xem Console browser để debug
+
+---
+
+## Đóng góp
+
+1. Fork repository
+2. Tạo branch mới (`git checkout -b feature/tinh-nang-moi`)
+3. Commit thay đổi (`git commit -m 'Thêm tính năng mới'`)
+4. Push lên branch (`git push origin feature/tinh-nang-moi`)
+5. Tạo Pull Request
+
+---
+
+## Giấy phép
+
+Dự án này được cấp phép theo [MIT License](LICENSE).
+
+---
+
+## Tác giả
+
+**LightEarth Team**
+
+- Website: [lightearth.vn](https://lightearth.vn)
+- GitHub: [@zixfel](https://github.com/zixfel)
+
+---
+
+## Lời cảm ơn
+
+- [MQTTnet](https://github.com/dotnet/MQTTnet) - Thư viện MQTT
+- [Chart.js](https://www.chartjs.org/) - Biểu đồ
+- [Tailwind CSS](https://tailwindcss.com/) - Framework CSS
+- [SignalR](https://dotnet.microsoft.com/apps/aspnet/signalr) - Real-time communication
+- [Lumentree](http://www.lumentree.co/) - API và thiết bị
+
+---
+
+<div align="center">
+
+**Được phát triển với ❤️ bởi LightEarth Team**
+
+⭐ Nếu bạn thấy dự án hữu ích, hãy cho chúng tôi một star!
+
+</div>
