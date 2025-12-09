@@ -164,8 +164,10 @@ public class SolarMonitorService : IHostedService, IDisposable
                 // Device data
                 DeviceTempValue = Convert.ToInt32(deviceData.TemperatureCelsius ?? 0),
 
-                // Load data - using homeload value for both since essential might not be available
-                EssentialValue = 0, // Essential load might not be directly available
+                // Load data (hoán đổi theo yêu cầu)
+                // EssentialValue = Tải cổng load = AcOutputPower
+                // LoadValue = Tải hòa lưới = HomeLoad
+                EssentialValue = deviceData.AcOutputPower ?? 0,
                 LoadValue = deviceData.HomeLoad ?? 0,
 
                 // Timestamp
