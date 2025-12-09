@@ -41,8 +41,13 @@ public class LumentreeClient
         _wifiStatus = "1";
         _cacheService = cacheService;
 
-        // Initialize and configure REST client
-        _client = new RestClient(BaseUrl);
+        // Initialize and configure REST client with extended timeout for Railway
+        var options = new RestClientOptions(BaseUrl)
+        {
+            MaxTimeout = 30000, // 30 seconds timeout
+            ThrowOnAnyError = false
+        };
+        _client = new RestClient(options);
         ConfigureClient();
 
         Log.Information("Initialized LumentreeClient with base URL: {BaseUrl}", BaseUrl);
