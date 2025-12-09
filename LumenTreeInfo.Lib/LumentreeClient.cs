@@ -1,5 +1,6 @@
 ﻿using LumenTreeInfo.Lib.Models.LumentreeApiModels;
 using RestSharp;
+using RestSharp.Serializers.Json;
 using Serilog;
 
 namespace LumenTreeInfo.Lib;
@@ -45,9 +46,18 @@ public class LumentreeClient
         var options = new RestClientOptions(BaseUrl)
         {
             MaxTimeout = 30000, // 30 seconds timeout
-            ThrowOnAnyError = false
+            ThrowOnAnyError = false,
+            // Explicitly set encoding
+            Encoding = System.Text.Encoding.UTF8
         };
-        _client = new RestClient(options);
+        _client = new RestClient(
+            options,
+            configureSerialization: s => s.UseSystemTextJson(new System.Text.Json.JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true,
+                PropertyNamingPolicy = null // Keep original casing
+            })
+        );
         ConfigureClient();
 
         Log.Information("Initialized LumentreeClient with base URL: {BaseUrl}", BaseUrl);
