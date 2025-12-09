@@ -336,15 +336,43 @@
 
 <!-- Charts Section -->
 <div id="chart-section" class="hidden space-y-4">
-    <!-- Battery SOC Chart -->
-    <div id="soc-section" class="bg-white dark:bg-slate-800 rounded-xl shadow-md p-3 sm:p-4 border border-slate-200 dark:border-slate-700">
-        <h2 class="text-sm sm:text-base font-bold text-slate-800 dark:text-white mb-3 flex items-center gap-2">
-            <i data-lucide="battery-full" class="w-4 h-4 text-emerald-500"></i>
-            Phần Trăm Pin (SOC)
-        </h2>
-        <div class="chart-container">
+    <!-- Battery SOC Chart - REAL-TIME ONLY (NO MOCK DATA) -->
+    <div id="soc-section" class="bg-white dark:bg-slate-800 rounded-xl shadow-md p-3 sm:p-4 border-2 border-emerald-200 dark:border-emerald-800">
+        <div class="flex items-center justify-between mb-3">
+            <h2 class="text-sm sm:text-base font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                <i data-lucide="battery-full" class="w-4 h-4 text-emerald-500"></i>
+                Phần Trăm Pin (SOC)
+            </h2>
+            <div class="flex items-center gap-2 text-[10px] text-emerald-600 dark:text-emerald-400">
+                <span class="flex items-center gap-1">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    Real-time
+                </span>
+            </div>
+        </div>
+        <!-- SOC Stats Row -->
+        <div class="grid grid-cols-4 gap-2 mb-3">
+            <div class="bg-emerald-50 dark:bg-emerald-900/30 rounded-lg p-2 text-center">
+                <div class="text-[8px] font-bold text-emerald-600 dark:text-emerald-400 uppercase">Hiện Tại</div>
+                <div class="text-sm font-black text-emerald-700 dark:text-emerald-300" id="soc-current">--%</div>
+            </div>
+            <div class="bg-green-50 dark:bg-green-900/30 rounded-lg p-2 text-center">
+                <div class="text-[8px] font-bold text-green-600 dark:text-green-400 uppercase">Cao Nhất</div>
+                <div class="text-sm font-black text-green-700 dark:text-green-300" id="soc-max">--%</div>
+            </div>
+            <div class="bg-amber-50 dark:bg-amber-900/30 rounded-lg p-2 text-center">
+                <div class="text-[8px] font-bold text-amber-600 dark:text-amber-400 uppercase">Thấp Nhất</div>
+                <div class="text-sm font-black text-amber-700 dark:text-amber-300" id="soc-min">--%</div>
+            </div>
+            <div class="bg-slate-50 dark:bg-slate-700/30 rounded-lg p-2 text-center">
+                <div class="text-[8px] font-bold text-slate-600 dark:text-slate-400 uppercase">Số Điểm</div>
+                <div class="text-sm font-black text-slate-700 dark:text-slate-300" id="soc-points">0</div>
+            </div>
+        </div>
+        <div class="chart-container relative">
             <canvas id="socChart"></canvas>
         </div>
+        <p class="text-[10px] text-slate-400 dark:text-slate-500 mt-2 text-center">Dữ liệu SOC được cập nhật real-time từ thiết bị qua MQTT (theo từng phút)</p>
     </div>
 
     <!-- PV Production Chart -->
@@ -423,6 +451,6 @@
     <!-- SignalR Client Library -->
     <script src="https://unpkg.com/@@microsoft/signalr@@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link href="~/css/index.css?v=08022" rel="stylesheet" />
-    <script src="~/js/index.js?v=08022"></script>
+    <link href="~/css/index.css?v=08024" rel="stylesheet" />
+    <script src="~/js/index.js?v=08024"></script>
 }

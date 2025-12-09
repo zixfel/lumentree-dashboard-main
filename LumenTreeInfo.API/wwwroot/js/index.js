@@ -1,11 +1,11 @@
 /**
  * Solar Monitor - Frontend JavaScript
- * Version: 08022 - Battery cell: always show section, display waiting message until real MQTT data arrives
+ * Version: 08024 - SOC Chart: Real-time only (no mock data), per-minute updates from MQTT
  * 
  * Features:
  * - Real-time data via SignalR
  * - Battery Cell monitoring (16 cells) with Day Max voltage
- * - SOC (State of Charge) Chart
+ * - SOC (State of Charge) Chart - REAL-TIME ONLY (no mock data)
  * - Energy flow visualization with blink effect on value change
  * - Chart.js visualizations
  * - Mobile optimized interface
@@ -57,9 +57,10 @@ document.addEventListener('DOMContentLoaded', function () {
     let connection;
     let currentDeviceId = '';
     
-    // SOC History for real-time chart
+    // SOC History for real-time chart - REAL DATA ONLY (no mock)
     let socHistory = [];
-    const MAX_SOC_HISTORY = 288; // 24 hours * 12 (5-min intervals)
+    const MAX_SOC_HISTORY = 1440; // 24 hours * 60 (1-min intervals)
+    let socDataReceived = false; // Track if we received real SOC data
     
     // Store previous values for blink detection
     let previousValues = {};
@@ -414,8 +415,8 @@ document.addEventListener('DOMContentLoaded', function () {
         // Initialize battery cells with waiting message (no mock data)
         initializeBatteryCellsWaiting();
         
-        // Initialize SOC chart with demo data (will be replaced by real-time data)
-        initializeSOCChart();
+        // Initialize SOC chart with waiting message (NO MOCK DATA - real-time only)
+        initializeSOCChartWaiting();
     }
 
     function updateDeviceInfo(deviceInfo) {
@@ -515,25 +516,42 @@ document.addEventListener('DOMContentLoaded', function () {
         const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
         updateValue('lastUpdateTime', `Cập nhật: ${timeStr}`);
         
-        // Update SOC history for real-time chart
+        // Update SOC history for real-time chart - PER MINUTE UPDATES
         if (batteryPercent > 0) {
             const now = new Date();
             const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
             
-            // Add new data point
-            socHistory.push({
-                time: timeStr,
-                soc: batteryPercent,
-                timestamp: now.getTime()
-            });
+            // Check if we should add this data point (avoid duplicates within same minute)
+            const lastEntry = socHistory.length > 0 ? socHistory[socHistory.length - 1] : null;
+            const shouldAddPoint = !lastEntry || lastEntry.time !== timeStr;
             
-            // Keep only last MAX_SOC_HISTORY points
-            if (socHistory.length > MAX_SOC_HISTORY) {
-                socHistory = socHistory.slice(-MAX_SOC_HISTORY);
+            if (shouldAddPoint) {
+                // Mark that we received real SOC data
+                socDataReceived = true;
+                
+                // Add new data point
+                socHistory.push({
+                    time: timeStr,
+                    soc: batteryPercent,
+                    timestamp: now.getTime()
+                });
+                
+                // Keep only last MAX_SOC_HISTORY points (24 hours of per-minute data)
+                if (socHistory.length > MAX_SOC_HISTORY) {
+                    socHistory = socHistory.slice(-MAX_SOC_HISTORY);
+                }
+                
+                console.log(`SOC updated: ${batteryPercent}% at ${timeStr} (${socHistory.length} points)`);
+                
+                // Update SOC chart with real-time data
+                updateSOCChartRealTime();
+            } else {
+                // Update the current minute's value if it changed
+                if (lastEntry && lastEntry.soc !== batteryPercent) {
+                    lastEntry.soc = batteryPercent;
+                    updateSOCChartRealTime();
+                }
             }
-            
-            // Update SOC chart with real-time data
-            updateSOCChartRealTime();
         }
     }
 
@@ -767,18 +785,79 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // ========================================
-    // SOC CHART
+    // SOC CHART - REAL-TIME ONLY (NO MOCK DATA)
     // ========================================
     
-    // Update SOC chart with real-time data from SignalR
+    // Initialize SOC chart with waiting message - NO MOCK DATA
+    function initializeSOCChartWaiting() {
+        const ctx = document.getElementById('socChart');
+        if (!ctx) return;
+        
+        // Reset SOC data for new device
+        socHistory = [];
+        socDataReceived = false;
+        
+        // Destroy existing chart if any
+        if (socChart) {
+            socChart.destroy();
+            socChart = null;
+        }
+        
+        // Show waiting message in chart container
+        const container = ctx.parentElement;
+        if (container) {
+            // Create waiting overlay
+            let waitingDiv = document.getElementById('soc-waiting');
+            if (!waitingDiv) {
+                waitingDiv = document.createElement('div');
+                waitingDiv.id = 'soc-waiting';
+                waitingDiv.className = 'absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-emerald-50/90 to-green-50/90 dark:from-emerald-900/40 dark:to-green-900/40 rounded-lg';
+                waitingDiv.innerHTML = `
+                    <div class="animate-pulse flex items-center gap-2 mb-2">
+                        <svg class="w-5 h-5 text-emerald-500 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span class="text-emerald-600 dark:text-emerald-400 text-sm font-medium">Đang chờ dữ liệu SOC...</span>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 text-center">Biểu đồ sẽ hiển thị khi nhận được dữ liệu real-time từ MQTT</p>
+                `;
+                container.style.position = 'relative';
+                container.appendChild(waitingDiv);
+            }
+        }
+        
+        // Reset stats display
+        updateSOCStats(0, 0, 0, 0);
+        
+        console.log("SOC chart initialized - waiting for real MQTT data (no mock data)");
+    }
+    
+    // Hide waiting message and show chart
+    function hideSOCWaitingMessage() {
+        const waitingDiv = document.getElementById('soc-waiting');
+        if (waitingDiv) {
+            waitingDiv.remove();
+        }
+    }
+    
+    // Update SOC chart with real-time data from SignalR - PER MINUTE
     function updateSOCChartRealTime() {
         const ctx = document.getElementById('socChart');
         if (!ctx) return;
         
         if (socHistory.length === 0) return;
         
+        // Hide waiting message when we have data
+        hideSOCWaitingMessage();
+        
         const labels = socHistory.map(item => item.time);
         const values = socHistory.map(item => item.soc);
+        
+        // Calculate current SOC stats
+        const currentSOC = values[values.length - 1];
+        const maxSOC = Math.max(...values);
+        const minSOC = Math.min(...values);
         
         if (socChart) {
             // Update existing chart data
@@ -786,7 +865,7 @@ document.addEventListener('DOMContentLoaded', function () {
             socChart.data.datasets[0].data = values;
             socChart.update('none'); // 'none' for no animation on update
         } else {
-            // Create new chart
+            // Create new chart with real data
             socChart = new Chart(ctx, {
                 type: 'line',
                 data: {
@@ -814,6 +893,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         tooltip: {
                             mode: 'index',
                             intersect: false,
+                            backgroundColor: 'rgba(50, 50, 50, 0.9)',
                             callbacks: {
                                 label: function(context) {
                                     return `SOC: ${context.parsed.y}%`;
@@ -827,10 +907,16 @@ document.addEventListener('DOMContentLoaded', function () {
                             max: 100,
                             ticks: {
                                 callback: value => value + '%',
-                                stepSize: 20
+                                stepSize: 20,
+                                font: { size: 10 }
                             },
                             grid: {
                                 color: 'rgba(200, 200, 200, 0.1)'
+                            },
+                            title: {
+                                display: true,
+                                text: 'Phần trăm (%)',
+                                font: { size: 11 }
                             }
                         },
                         x: {
@@ -853,69 +939,22 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             });
         }
+        
+        // Update SOC stats display
+        updateSOCStats(currentSOC, maxSOC, minSOC, socHistory.length);
     }
     
-    // Initialize SOC chart with mock/demo data if no real data
-    function initializeSOCChart() {
-        const ctx = document.getElementById('socChart');
-        if (!ctx) return;
+    // Update SOC statistics display
+    function updateSOCStats(current, max, min, dataPoints) {
+        const currentEl = document.getElementById('soc-current');
+        const maxEl = document.getElementById('soc-max');
+        const minEl = document.getElementById('soc-min');
+        const pointsEl = document.getElementById('soc-points');
         
-        // Generate mock SOC data for demo (simulating a typical day)
-        const mockData = generateMockSOCData();
-        socHistory = mockData;
-        
-        updateSOCChartRealTime();
-        console.log("Initialized SOC chart with demo data");
-    }
-    
-    // Generate realistic mock SOC data for a day
-    function generateMockSOCData() {
-        const data = [];
-        const now = new Date();
-        const currentHour = now.getHours();
-        const currentMinute = now.getMinutes();
-        
-        // Start from beginning of day
-        let soc = 50; // Start at 50%
-        
-        for (let hour = 0; hour <= currentHour; hour++) {
-            const maxMinute = (hour === currentHour) ? currentMinute : 55;
-            
-            for (let minute = 0; minute <= maxMinute; minute += 5) {
-                // Simulate SOC pattern:
-                // - Night (0-6): slow discharge
-                // - Morning (6-9): start charging
-                // - Day (9-15): strong charging from solar
-                // - Evening (15-18): peak usage, discharge
-                // - Night (18-24): slow discharge
-                
-                if (hour >= 0 && hour < 6) {
-                    // Night: slow discharge
-                    soc = Math.max(20, soc - Math.random() * 0.3);
-                } else if (hour >= 6 && hour < 9) {
-                    // Morning: start charging
-                    soc = Math.min(100, soc + Math.random() * 1.5);
-                } else if (hour >= 9 && hour < 15) {
-                    // Day: strong solar charging
-                    soc = Math.min(100, soc + Math.random() * 2);
-                } else if (hour >= 15 && hour < 18) {
-                    // Evening: peak usage
-                    soc = Math.max(30, soc - Math.random() * 1.5);
-                } else {
-                    // Night: slow discharge
-                    soc = Math.max(20, soc - Math.random() * 0.5);
-                }
-                
-                const timeStr = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
-                data.push({
-                    time: timeStr,
-                    soc: Math.round(soc),
-                    timestamp: new Date(now.getFullYear(), now.getMonth(), now.getDate(), hour, minute).getTime()
-                });
-            }
-        }
-        
-        return data;
+        if (currentEl) currentEl.textContent = dataPoints > 0 ? `${current}%` : '--%';
+        if (maxEl) maxEl.textContent = dataPoints > 0 ? `${max}%` : '--%';
+        if (minEl) minEl.textContent = dataPoints > 0 ? `${min}%` : '--%';
+        if (pointsEl) pointsEl.textContent = dataPoints > 0 ? `${dataPoints}` : '0';
     }
     
     // Legacy function for SignalR SOC data (if API sends history)
@@ -932,6 +971,7 @@ document.addEventListener('DOMContentLoaded', function () {
             timestamp: Date.now()
         }));
         
+        socDataReceived = true;
         updateSOCChartRealTime();
     }
 
