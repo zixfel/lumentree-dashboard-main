@@ -166,11 +166,16 @@
         .dark .modal-content {
             background: #1f2937;
         }
+        
+        /* Header scroll hide/show */
+        #mainHeader.header-hidden {
+            transform: translateY(-100%);
+        }
     </style>
 </head>
 <body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 min-h-screen">
-    <!-- Header -->
-    <header class="gradient-brand dark:gradient-dark shadow-lg sticky top-0 z-50">
+    <!-- Header - Hide on scroll down, show on scroll up -->
+    <header id="mainHeader" class="gradient-brand dark:gradient-dark shadow-lg sticky top-0 z-50 transition-transform duration-300">
         <div class="container mx-auto px-4 py-3">
             <div class="flex items-center justify-between">
                 <!-- Logo -->
@@ -287,6 +292,27 @@
                 closeCalculatorModal();
             }
         });
+        
+        // ========================================
+        // HEADER SCROLL HIDE - Always hide when scrolled
+        // ========================================
+        (function() {
+            const header = document.getElementById('mainHeader');
+            
+            function handleHeaderScroll() {
+                if (header) {
+                    if (window.scrollY > 50) {
+                        // Scrolled down - hide header
+                        header.classList.add('header-hidden');
+                    } else {
+                        // At top - show header
+                        header.classList.remove('header-hidden');
+                    }
+                }
+            }
+            
+            window.addEventListener('scroll', handleHeaderScroll, { passive: true });
+        })();
     </script>
     
     @await RenderSectionAsync("Scripts", required: false)
