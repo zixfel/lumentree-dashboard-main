@@ -306,6 +306,70 @@ public class HomeController : Controller
     }
 
     /// <summary>
+    /// Gets SOC timeline data from lumentree.net API for SOC chart
+    /// Proxy to https://lumentree.net/api/soc/{deviceId}/{date}
+    /// Returns timeline array with {soc, t} for each 5-minute interval
+    /// </summary>
+    /// <param name="deviceId">The device ID</param>
+    /// <param name="date">Date in format yyyy-MM-dd</param>
+    [Route("/device/{deviceId}/soc")]
+    public async Task<IActionResult> GetSOCData(string deviceId, string? date)
+    {
+        if (string.IsNullOrEmpty(deviceId))
+        {
+            return BadRequest("Device ID is required");
+        }
+
+        try
+        {
+            // Use provided date or current date
+            var queryDate = string.IsNullOrEmpty(date) 
+                ? DateTime.Now.ToString("yyyy-MM-dd") 
+                : date;
+            
+            Log.Information("Fetching SOC data from lumentree.net for device {DeviceId} on {Date}", deviceId, queryDate);
+            
+            using var httpClient = new HttpClient();
+            httpClient.Timeout = TimeSpan.FromSeconds(15);
+            
+            // Fetch from lumentree.net SOC API
+            var apiUrl = $"https://lumentree.net/api/soc/{deviceId}/{queryDate}";
+            
+            var response = await httpClient.GetAsync(apiUrl);
+            
+            if (!response.IsSuccessStatusCode)
+            {
+                Log.Warning("Lumentree SOC API returned {StatusCode} for device {DeviceId}", 
+                    response.StatusCode, deviceId);
+                return StatusCode((int)response.StatusCode, "Failed to fetch SOC data from Lumentree");
+            }
+            
+            var content = await response.Content.ReadAsStringAsync();
+            
+            // Parse and return the JSON directly
+            var data = System.Text.Json.JsonSerializer.Deserialize<object>(content);
+            
+            Log.Information("Successfully fetched SOC data for device {DeviceId} on {Date}", deviceId, queryDate);
+            return Json(data);
+        }
+        catch (HttpRequestException ex)
+        {
+            Log.Error(ex, "HTTP error fetching SOC data for {DeviceId}", deviceId);
+            return StatusCode(502, $"Failed to connect to Lumentree API: {ex.Message}");
+        }
+        catch (TaskCanceledException ex)
+        {
+            Log.Error(ex, "Timeout fetching SOC data for {DeviceId}", deviceId);
+            return StatusCode(504, "Request to Lumentree API timed out");
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error getting SOC data for {DeviceId}", deviceId);
+            return StatusCode(500, "An error occurred while fetching SOC data");
+        }
+    }
+
+    /// <summary>
     /// Debug endpoint to test connectivity to Lumentree API
     /// </summary>
     [Route("/debug/connectivity")]

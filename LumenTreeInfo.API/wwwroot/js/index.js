@@ -1,11 +1,11 @@
 /**
  * Solar Monitor - Frontend JavaScript
- * Version: 08024 - SOC Chart: Real-time only (no mock data), per-minute updates from MQTT
+ * Version: 08026 - SOC Chart: Data from lumentree.net/api/soc/{deviceId}/{date}
  * 
  * Features:
  * - Real-time data via SignalR
  * - Battery Cell monitoring (16 cells) with Day Max voltage
- * - SOC (State of Charge) Chart - REAL-TIME ONLY (no mock data)
+ * - SOC (State of Charge) Chart - DATA FROM lumentree.net/api/soc (timeline with 5-min intervals)
  * - Energy flow visualization with blink effect on value change
  * - Chart.js visualizations
  * - Mobile optimized interface
@@ -344,6 +344,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 console.log("Data received:", data);
                 processData(data);
                 showCompactSearchBar(deviceId, date);
+                
+                // Fetch SOC timeline data from Lumentree API
+                fetchSOCData(deviceId, date);
             })
             .catch(error => {
                 console.error("Fetch error:", error);
@@ -352,6 +355,56 @@ document.addEventListener('DOMContentLoaded', function () {
             .finally(() => {
                 showLoading(false);
             });
+    }
+    
+    // Fetch SOC timeline data from lumentree.net API
+    function fetchSOCData(deviceId, date) {
+        const queryDate = date || document.getElementById('dateInput')?.value || new Date().toISOString().split('T')[0];
+        
+        fetch(`/device/${deviceId}/soc?date=${queryDate}`)
+            .then(response => {
+                if (!response.ok) throw new Error(`SOC API error: ${response.status}`);
+                return response.json();
+            })
+            .then(data => {
+                console.log("SOC timeline data received:", data);
+                
+                // Get timeline array from response
+                const timeline = data?.timeline;
+                if (timeline && Array.isArray(timeline) && timeline.length > 0) {
+                    // Load all SOC data points from timeline
+                    loadSOCTimeline(timeline);
+                    console.log(`Loaded ${timeline.length} SOC data points from Lumentree API`);
+                } else {
+                    console.warn("No SOC timeline data available");
+                }
+            })
+            .catch(error => {
+                console.error("SOC data fetch error:", error);
+            });
+    }
+    
+    // Load SOC timeline data into chart
+    function loadSOCTimeline(timeline) {
+        // Clear existing data
+        socHistory = [];
+        
+        // Add all data points from timeline
+        timeline.forEach(item => {
+            if (item.soc !== undefined && item.soc !== null && item.t) {
+                socHistory.push({
+                    time: item.t,
+                    soc: item.soc,
+                    timestamp: Date.now()
+                });
+            }
+        });
+        
+        if (socHistory.length > 0) {
+            socDataReceived = true;
+            updateSOCChartRealTime();
+            console.log(`SOC chart updated with ${socHistory.length} points`);
+        }
     }
 
     function showCompactSearchBar(deviceId, date) {
@@ -415,8 +468,15 @@ document.addEventListener('DOMContentLoaded', function () {
         // Initialize battery cells with waiting message (no mock data)
         initializeBatteryCellsWaiting();
         
-        // Initialize SOC chart with waiting message (NO MOCK DATA - real-time only)
+        // Initialize SOC chart with waiting message
+        // SOC data will be loaded from fetchSOCData() called after this
         initializeSOCChartWaiting();
+        
+        // Start SOC polling (every 5 minutes to get new data points)
+        const deviceId = document.getElementById('deviceId')?.value?.trim();
+        if (deviceId) {
+            startSOCPolling(deviceId);
+        }
     }
 
     function updateDeviceInfo(deviceInfo) {
@@ -785,8 +845,36 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // ========================================
-    // SOC CHART - REAL-TIME ONLY (NO MOCK DATA)
+    // SOC CHART - DATA FROM LUMENTREE API
     // ========================================
+    
+    // SOC polling interval (poll every 5 minutes to match API data interval)
+    let socPollingInterval = null;
+    
+    // Start polling SOC data every 5 minutes (to get new data points)
+    function startSOCPolling(deviceId) {
+        // Clear any existing interval
+        if (socPollingInterval) {
+            clearInterval(socPollingInterval);
+        }
+        
+        // Poll every 5 minutes (300 seconds) to get new SOC data
+        socPollingInterval = setInterval(() => {
+            const date = document.getElementById('dateInput')?.value;
+            fetchSOCData(deviceId, date);
+        }, 300000); // 5 minutes
+        
+        console.log("SOC polling started - every 5 minutes");
+    }
+    
+    // Stop SOC polling
+    function stopSOCPolling() {
+        if (socPollingInterval) {
+            clearInterval(socPollingInterval);
+            socPollingInterval = null;
+            console.log("SOC polling stopped");
+        }
+    }
     
     // Initialize SOC chart with waiting message - NO MOCK DATA
     function initializeSOCChartWaiting() {
@@ -796,6 +884,9 @@ document.addEventListener('DOMContentLoaded', function () {
         // Reset SOC data for new device
         socHistory = [];
         socDataReceived = false;
+        
+        // Stop any existing polling
+        stopSOCPolling();
         
         // Destroy existing chart if any
         if (socChart) {
