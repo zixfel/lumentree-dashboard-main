@@ -707,10 +707,25 @@ canvas:hover {
         gap: 0.375rem; /* 6px */
     }
     
-    /* Hide compact search bar on mobile - not sticky */
+    /* MOBILE: Compact search bar should NOT be sticky - scroll with page */
     #compactSearch {
         position: relative !important;
         top: auto !important;
+        z-index: auto !important;
+    }
+    
+    /* Override any Tailwind sticky classes on mobile */
+    #compactSearch.sm\:sticky {
+        position: relative !important;
+    }
+}
+
+/* PC/Tablet: Compact search bar IS sticky */
+@media (min-width: 641px) {
+    #compactSearch {
+        position: sticky;
+        top: 0;
+        z-index: 40;
     }
 }
 
