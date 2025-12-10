@@ -509,7 +509,15 @@ document.addEventListener('DOMContentLoaded', function () {
         // PV - with blink effect
         updateValue('pv-power', `${data.pvTotalPower}W`);
         if (data.pv2Power) {
-            updateValueHTML('pv-desc', `<span class="text-amber-500">${data.pv1Power}W</span> <span class="text-xs text-gray-500">${data.pv1Voltage}V</span> | <span class="text-amber-600">${data.pv2Power}W</span> <span class="text-xs text-gray-500">${data.pv2Voltage}V</span>`);
+            updateValueHTML('pv-desc', `
+                <span class="hidden sm:inline text-amber-500">S1:</span> 
+                <span class="text-amber-400 font-bold text-[11px] sm:text-sm">${data.pv1Power}W</span> 
+                <span class="text-[9px] sm:text-xs text-gray-400">${data.pv1Voltage}V</span> 
+                <span class="text-gray-500 mx-0.5">|</span> 
+                <span class="hidden sm:inline text-amber-500">S2:</span> 
+                <span class="text-amber-400 font-bold text-[11px] sm:text-sm">${data.pv2Power}W</span> 
+                <span class="text-[9px] sm:text-xs text-gray-400">${data.pv2Voltage}V</span>
+            `);
         } else {
             updateValue('pv-desc', `${data.pv1Voltage}V`);
         }
