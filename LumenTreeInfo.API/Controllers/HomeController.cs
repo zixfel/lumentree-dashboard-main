@@ -86,16 +86,10 @@ public class HomeController : Controller
             {
                 Log.Warning("No device info found for device {DeviceId}. This could be due to: invalid device ID, API connection issues, or expired token.", deviceId);
                 return NotFound(new { 
-                    error = $"Không tìm thấy thiết bị \"{deviceId}\".",
+                    error = $"Không tìm thấy thiết bị {deviceId} hoặc không thể lấy dữ liệu. Vui lòng kiểm tra lại Device ID.",
                     code = "DEVICE_NOT_FOUND",
                     deviceId = deviceId,
-                    message = "Hệ thống không thể kết nối đến server Lumentree hoặc Device ID không hợp lệ.",
-                    suggestions = new[] {
-                        "Kiểm tra lại Device ID (ví dụ: P250812032)",
-                        "Thử tải lại trang sau vài giây",
-                        "Server Lumentree có thể đang bảo trì"
-                    },
-                    canRetry = true
+                    suggestion = "Kiểm tra Device ID có đúng không (ví dụ: P250801055)"
                 });
             }
 
