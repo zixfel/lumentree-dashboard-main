@@ -180,7 +180,7 @@ public class SolarMonitorService : IHostedService, IDisposable
             // Send to connected clients
             await _hubContext.Clients.Group(deviceData.DeviceId).SendAsync("ReceiveRealTimeData", data);
 
-            Log.Information("Sent real-time update for device {DeviceId}", deviceData.DeviceId);
+            Log.Debug("Sent real-time update for device {DeviceId}", deviceData.DeviceId);
         }
         catch (Exception ex)
         {
@@ -214,7 +214,7 @@ public class SolarMonitorService : IHostedService, IDisposable
             // Send to connected clients
             await _hubContext.Clients.Group(cellData.DeviceId).SendAsync("ReceiveBatteryCellData", data);
 
-            Log.Information("Sent battery cell data for device {DeviceId}: {NumCells} cells", 
+            Log.Debug("Sent battery cell data for device {DeviceId}: {NumCells} cells", 
                 cellData.DeviceId, cellData.NumberOfCells);
         }
         catch (Exception ex)

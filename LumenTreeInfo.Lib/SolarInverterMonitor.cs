@@ -311,7 +311,7 @@ public class SolarInverterMonitor : IDisposable
     /// <param name="deviceId">Device ID that sent the message</param>
     private void OnMessageReceived(byte[] payload, string deviceId)
     {
-        Log.Information($"Received message from device {deviceId}: {BitConverter.ToString(payload).Replace("-", "")}");
+        Log.Debug($"Received message from device {deviceId}: {BitConverter.ToString(payload).Replace("-", "")}");
 
         var hexPayload = BitConverter.ToString(payload).Replace("-", "").ToLower();
 
@@ -351,7 +351,7 @@ public class SolarInverterMonitor : IDisposable
     /// <param name="deviceId">Device ID that sent the response</param>
     private void ParseBatteryCells(string hexResponse, string deviceId)
     {
-        Log.Information($"Parsing battery cell data for device {deviceId}");
+        Log.Debug($"Parsing battery cell data for device {deviceId}");
         try
         {
             // Check if it starts with 0103 (read command response)
@@ -428,13 +428,13 @@ public class SolarInverterMonitor : IDisposable
     /// <param name="deviceId">Device ID that sent the response</param>
     private void ParseDeviceData(string hexResponse, string deviceId)
     {
-        Log.Information($"Parsing device data for device {deviceId}");
+        Log.Debug($"Parsing device data for device {deviceId}");
         try
         {
             // Check if it starts with 0103 (read command response)
             if (!hexResponse.StartsWith("0103"))
             {
-                Log.Information($"Response is not a read command: {hexResponse}");
+                Log.Debug($"Response is not a read command: {hexResponse}");
                 return;
             }
 
@@ -657,7 +657,7 @@ public class SolarInverterMonitor : IDisposable
         // Request to read registers 0-95
         var readCmd = GetReadHexStr(0, 95);
 
-        Log.Information($"Sending command to request data for device {deviceId}...");
+        Log.Debug($"Sending command to request data for device {deviceId}...");
         await PublishMessageAsync(GetPubTopic(deviceId), readCmd);
     }
 
@@ -677,7 +677,7 @@ public class SolarInverterMonitor : IDisposable
         // Request to read registers 250-300
         var readCmd = GetReadHexStr(250, 50);
 
-        Log.Information($"Requesting battery cell information for device {deviceId}...");
+        Log.Debug($"Requesting battery cell information for device {deviceId}...");
         await PublishMessageAsync(GetPubTopic(deviceId), readCmd);
     }
 
