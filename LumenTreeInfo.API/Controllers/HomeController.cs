@@ -78,30 +78,28 @@ public class HomeController : Controller
                 }
             }
 
-            // Try primary API first (lesvr.suntcn.com)
+            // PRIMARY: Try lumentree.net FIRST (more reliable)
+            var lumentreeResult = await TryLumentreeNetFallback(deviceId, queryDate);
+            if (lumentreeResult != null)
+            {
+                Log.Debug("Got data from lumentree.net for device {DeviceId}", deviceId);
+                return Json(lumentreeResult);
+            }
+            
+            // FALLBACK: Try old API (lesvr.suntcn.com) if lumentree.net fails
+            Log.Debug("lumentree.net unavailable, trying legacy API for device {DeviceId}", deviceId);
             var (deviceInfo, pvData, batData, essentialLoad, grid, load) =
                 await _client.GetAllDeviceDataAsync(deviceId, queryDate);
 
-            // If primary API fails, try fallback to lumentree.net
             if (deviceInfo == null)
             {
-                Log.Debug("Primary API unavailable for device {DeviceId}, using lumentree.net fallback", deviceId);
-                
-                var fallbackResult = await TryLumentreeNetFallback(deviceId, queryDate);
-                if (fallbackResult != null)
-                {
-                    Log.Debug("Got data from lumentree.net fallback for device {DeviceId}", deviceId);
-                    return Json(fallbackResult);
-                }
-                
-                Log.Warning("Both APIs failed for device {DeviceId}", deviceId);
+                Log.Warning("All APIs failed for device {DeviceId}", deviceId);
                 return NotFound(new { 
-                    error = $"Không thể kết nối đến thiết bị \"{deviceId}\". Server Lumentree có thể đang bảo trì. [v2.1]",
+                    error = $"Không tìm thấy thiết bị \"{deviceId}\". Vui lòng kiểm tra lại Device ID.",
                     code = "DEVICE_NOT_FOUND",
                     deviceId = deviceId,
-                    suggestion = "Vui lòng thử lại sau vài phút hoặc kiểm tra Device ID",
-                    fallbackTried = true,
-                    apiVersion = "2.1"
+                    suggestion = "Kiểm tra Device ID có đúng không",
+                    apiVersion = "3.0"
                 });
             }
 
