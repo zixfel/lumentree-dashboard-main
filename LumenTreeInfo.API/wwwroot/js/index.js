@@ -336,13 +336,23 @@ document.addEventListener('DOMContentLoaded', function () {
     // DATA FETCHING
     // ========================================
     
-    function fetchData() {
+    // Retry configuration
+    let fetchRetryCount = 0;
+    const MAX_RETRIES = 3;
+    const RETRY_DELAY = 2000;
+    
+    function fetchData(isRetry = false) {
         const deviceId = document.getElementById('deviceId')?.value?.trim();
         const date = document.getElementById('dateInput')?.value;
 
         if (!deviceId) {
             showError('Vui lòng nhập Device ID');
             return;
+        }
+        
+        // Reset retry count on new fetch
+        if (!isRetry) {
+            fetchRetryCount = 0;
         }
 
         // Update URL
@@ -353,26 +363,29 @@ document.addEventListener('DOMContentLoaded', function () {
         // Update title
         document.title = `Solar Monitor - ${deviceId}`;
 
-        // Subscribe to real-time
+        // Subscribe to real-time FIRST (this works even when API is down)
         subscribeToDevice(deviceId);
 
         showLoading(true);
         hideError();
+        
+        // Show retry message
+        if (isRetry) {
+            showError(`Đang thử kết nối lại... (${fetchRetryCount}/${MAX_RETRIES})`);
+        }
 
         fetch(`/device/${deviceId}?date=${date}`)
             .then(async response => {
                 if (!response.ok) {
                     // Try to parse error response as JSON
+                    let errorData = null;
                     try {
-                        const errorData = await response.json();
-                        throw new Error(errorData.error || errorData.suggestion || `Server error: ${response.status}`);
-                    } catch (parseError) {
-                        // If parsing fails, use status code message
-                        if (response.status === 404) {
-                            throw new Error(`Không tìm thấy thiết bị "${deviceId}". Vui lòng kiểm tra lại Device ID.`);
-                        }
-                        throw new Error(`Server error: ${response.status}`);
-                    }
+                        errorData = await response.json();
+                    } catch (e) {}
+                    
+                    const error = new Error(errorData?.error || `Server error: ${response.status}`);
+                    error.status = response.status;
+                    throw error;
                 }
                 return response.json();
             })
@@ -381,6 +394,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (data.error) {
                     throw new Error(data.error);
                 }
+                
+                // Success - reset retry
+                fetchRetryCount = 0;
+                hideError();
+                
                 console.log("Data received:", data);
                 processData(data);
                 showCompactSearchBar(deviceId, date);
@@ -390,11 +408,69 @@ document.addEventListener('DOMContentLoaded', function () {
             })
             .catch(error => {
                 console.error("Fetch error:", error);
-                showError(error.message || 'Lỗi tải dữ liệu. Vui lòng thử lại sau.');
+                
+                // Auto-retry for server errors
+                if (fetchRetryCount < MAX_RETRIES && (error.status === 404 || error.status === 500 || error.status === 503 || !error.status)) {
+                    fetchRetryCount++;
+                    console.log(`Retry ${fetchRetryCount}/${MAX_RETRIES} in ${RETRY_DELAY}ms...`);
+                    setTimeout(() => fetchData(true), RETRY_DELAY * fetchRetryCount);
+                } else {
+                    // Show error with real-time fallback option
+                    showErrorWithFallback(error.message, deviceId);
+                }
             })
             .finally(() => {
-                showLoading(false);
+                if (fetchRetryCount === 0 || fetchRetryCount >= MAX_RETRIES) {
+                    showLoading(false);
+                }
             });
+    }
+    
+    // Show error with option to use real-time data only
+    function showErrorWithFallback(message, deviceId) {
+        const errorEl = document.getElementById('error');
+        if (errorEl) {
+            errorEl.innerHTML = `
+                <div class="flex flex-col items-center gap-3">
+                    <div class="text-red-600 dark:text-red-400">${message}</div>
+                    <div class="text-sm text-slate-500 dark:text-slate-400">
+                        Server Lumentree có thể đang bảo trì. Bạn có thể:
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="fetchData()" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-sm">
+                            🔄 Thử lại
+                        </button>
+                        <button onclick="useRealtimeOnly('${deviceId}')" class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 text-sm">
+                            📡 Chỉ xem Real-time
+                        </button>
+                    </div>
+                </div>
+            `;
+            errorEl.classList.remove('hidden');
+        }
+    }
+    
+    // Use real-time data only mode (when API is down)
+    function useRealtimeOnly(deviceId) {
+        hideError();
+        showCompactSearchBar(deviceId, new Date().toISOString().split('T')[0]);
+        
+        // Show sections with placeholder data
+        const summaryStats = document.getElementById('summaryStats');
+        const chartSection = document.getElementById('chart-section');
+        const batteryCellSection = document.getElementById('batteryCellSection');
+        
+        if (summaryStats) summaryStats.classList.remove('hidden');
+        if (chartSection) chartSection.classList.remove('hidden');
+        if (batteryCellSection) batteryCellSection.classList.remove('hidden');
+        
+        // Show waiting message
+        showError('📡 Đang chờ dữ liệu real-time từ thiết bị qua MQTT...');
+        
+        // Initialize SOC chart waiting state
+        initializeSOCChartWaiting();
+        
+        console.log(`Real-time only mode for device ${deviceId}`);
     }
     
     // Fetch SOC timeline data from lumentree.net API
