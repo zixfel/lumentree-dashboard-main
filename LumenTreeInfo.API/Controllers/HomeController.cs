@@ -78,15 +78,25 @@ public class HomeController : Controller
                 }
             }
 
-            // Get all device data using the enhanced client method
+            // Try primary API first (lesvr.suntcn.com)
             var (deviceInfo, pvData, batData, essentialLoad, grid, load) =
                 await _client.GetAllDeviceDataAsync(deviceId, queryDate);
 
+            // If primary API fails, try fallback to lumentree.net
             if (deviceInfo == null)
             {
-                Log.Warning("No device info found for device {DeviceId}. This could be due to: invalid device ID, API connection issues, or expired token.", deviceId);
+                Log.Warning("Primary API failed for device {DeviceId}, trying lumentree.net fallback...", deviceId);
+                
+                var fallbackResult = await TryLumentreeNetFallback(deviceId, queryDate);
+                if (fallbackResult != null)
+                {
+                    Log.Information("Successfully got data from lumentree.net fallback for device {DeviceId}", deviceId);
+                    return Json(fallbackResult);
+                }
+                
+                Log.Warning("Both primary and fallback APIs failed for device {DeviceId}", deviceId);
                 return NotFound(new { 
-                    error = $"Không tìm thấy thiết bị {deviceId} hoặc không thể lấy dữ liệu. Vui lòng kiểm tra lại Device ID.",
+                    error = $"Không tìm thấy thiết bị \"{deviceId}\". Vui lòng kiểm tra lại Device ID.",
                     code = "DEVICE_NOT_FOUND",
                     deviceId = deviceId,
                     suggestion = "Kiểm tra Device ID có đúng không (ví dụ: P250801055)"
@@ -115,6 +125,94 @@ public class HomeController : Controller
                 code = "INTERNAL_ERROR",
                 details = ex.Message
             });
+        }
+    }
+    
+    /// <summary>
+    /// Fallback to lumentree.net API when primary API fails
+    /// </summary>
+    private async Task<object?> TryLumentreeNetFallback(string deviceId, DateTime queryDate)
+    {
+        try
+        {
+            using var httpClient = new HttpClient();
+            httpClient.Timeout = TimeSpan.FromSeconds(15);
+            httpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Linux; Android 10)");
+            
+            // Get realtime data from lumentree.net
+            var realtimeUrl = $"https://lumentree.net/api/realtime/{deviceId}";
+            var realtimeResponse = await httpClient.GetAsync(realtimeUrl);
+            
+            if (!realtimeResponse.IsSuccessStatusCode)
+            {
+                Log.Warning("Lumentree.net fallback failed with status {StatusCode}", realtimeResponse.StatusCode);
+                return null;
+            }
+            
+            var realtimeJson = await realtimeResponse.Content.ReadAsStringAsync();
+            var realtimeData = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(realtimeJson);
+            
+            // Check if we got valid data
+            if (!realtimeData.TryGetProperty("device_id", out _))
+            {
+                Log.Warning("Lumentree.net fallback returned invalid data");
+                return null;
+            }
+            
+            // Build response compatible with frontend
+            var deviceInfo = new {
+                DeviceId = deviceId,
+                DeviceType = "Lumentree Inverter",
+                OnlineStatus = 1,
+                RemarkName = "",
+                ErrorStatus = (string?)null
+            };
+            
+            // Create empty chart data (288 points for 24 hours at 5-min intervals)
+            var emptyChartData = new List<int>(new int[288]);
+            
+            return new {
+                DeviceInfo = deviceInfo,
+                Pv = new {
+                    TableKey = "pv",
+                    TableName = "PV发电量",
+                    TableValue = 0,
+                    TableValueInfo = emptyChartData
+                },
+                Bat = new {
+                    Bats = new[] {
+                        new { TableName = "电池充电电量", TableValue = 0, TableKey = "bat" },
+                        new { TableName = "电池放电电量", TableValue = 0, TableKey = "batF" }
+                    },
+                    TableValueInfo = emptyChartData
+                },
+                EssentialLoad = new {
+                    TableKey = "essentialLoad",
+                    TableName = "不断电负载耗电量",
+                    TableValue = 0,
+                    TableValueInfo = emptyChartData
+                },
+                Grid = new {
+                    TableKey = "grid",
+                    TableName = "电网输入电量",
+                    TableValue = 0,
+                    TableValueInfo = emptyChartData
+                },
+                Load = new {
+                    TableKey = "homeload",
+                    TableName = "家庭负载耗电量",
+                    TableValue = 0,
+                    TableValueInfo = emptyChartData
+                },
+                // Include realtime data for frontend to use
+                RealtimeData = realtimeData,
+                DataSource = "lumentree.net"
+            };
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error in lumentree.net fallback for device {DeviceId}", deviceId);
+            return null;
         }
     }
 
