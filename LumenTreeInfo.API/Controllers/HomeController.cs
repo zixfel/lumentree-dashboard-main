@@ -137,7 +137,13 @@ public class HomeController : Controller
                 error = $"Không tìm thấy thiết bị \"{deviceId}\". Thiết bị có thể offline hoặc Device ID không đúng.",
                 code = "DEVICE_NOT_FOUND",
                 deviceId = deviceId,
-                suggestion = "Kiểm tra Device ID và đảm bảo thiết bị đang online",
+                suggestions = new[] {
+                    "Kiểm tra lại Device ID - ID thường bắt đầu bằng P, H hoặc các ký tự khác theo loại thiết bị",
+                    "Đảm bảo thiết bị đang online và kết nối internet",
+                    "Kiểm tra xem thiết bị có hiển thị trên app Lumentree không",
+                    $"Thử test connectivity tại: /debug/connectivity?deviceId={deviceId}"
+                },
+                help = "Nếu bạn mới mua thiết bị, vui lòng đợi 5-10 phút để hệ thống đồng bộ dữ liệu",
                 apiVersion = "3.1"
             });
         }
@@ -626,9 +632,10 @@ public class HomeController : Controller
 
     /// <summary>
     /// Debug endpoint to test connectivity to Lumentree API
+    /// Accepts optional deviceId query parameter for testing specific device
     /// </summary>
     [Route("/debug/connectivity")]
-    public async Task<IActionResult> TestConnectivity()
+    public async Task<IActionResult> TestConnectivity([FromQuery] string? deviceId = null)
     {
         var results = new Dictionary<string, object>();
         
@@ -664,18 +671,29 @@ public class HomeController : Controller
             results["lumentree_api"] = new { success = false, error = ex.Message };
         }
         
-        // Test 3: Token Generation
-        try
+        // Test 3: Token Generation (only if deviceId is provided)
+        if (!string.IsNullOrEmpty(deviceId))
         {
-            var token = await _client.GenerateToken("P250801055");
-            results["token_generation"] = new { 
-                success = !string.IsNullOrEmpty(token), 
-                token_preview = token?.Substring(0, Math.Min(8, token?.Length ?? 0)) + "..." 
-            };
+            try
+            {
+                var token = await _client.GenerateToken(deviceId);
+                results["token_generation"] = new { 
+                    success = !string.IsNullOrEmpty(token),
+                    device_id = deviceId,
+                    token_preview = token?.Substring(0, Math.Min(8, token?.Length ?? 0)) + "..." 
+                };
+            }
+            catch (Exception ex)
+            {
+                results["token_generation"] = new { success = false, error = ex.Message, device_id = deviceId };
+            }
         }
-        catch (Exception ex)
+        else
         {
-            results["token_generation"] = new { success = false, error = ex.Message };
+            results["token_generation"] = new { 
+                success = false, 
+                message = "No deviceId provided. Add ?deviceId=YOUR_DEVICE_ID to test token generation" 
+            };
         }
         
         return Json(results);
