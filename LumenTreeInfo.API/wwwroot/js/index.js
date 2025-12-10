@@ -195,6 +195,30 @@ document.addEventListener('DOMContentLoaded', function () {
 
         Chart.defaults.scale.grid.color = isDarkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)';
         Chart.defaults.scale.ticks.color = isDarkMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)';
+        
+        // Register custom tooltip positioner to prevent cutoff at chart edges
+        Chart.Tooltip.positioners.edgeAware = function(elements, eventPosition) {
+            if (!elements.length) return false;
+            
+            const chart = this.chart;
+            const chartArea = chart.chartArea;
+            const tooltipWidth = 140;
+            const padding = 20;
+            
+            let x = elements[0].element.x;
+            let y = elements[0].element.y;
+            
+            // Adjust X if tooltip would overflow right edge
+            if (x + tooltipWidth/2 > chartArea.right - padding) {
+                x = chartArea.right - tooltipWidth - padding;
+            }
+            // Adjust X if tooltip would overflow left edge
+            if (x - tooltipWidth/2 < chartArea.left + padding) {
+                x = chartArea.left + tooltipWidth/2 + padding;
+            }
+            
+            return { x: x, y: y };
+        };
     }
 
     // ========================================
@@ -1006,17 +1030,39 @@ document.addEventListener('DOMContentLoaded', function () {
                     responsive: true,
                     maintainAspectRatio: false,
                     animation: false,
+                    layout: {
+                        padding: {
+                            left: 10,
+                            right: 30,
+                            top: 10,
+                            bottom: 5
+                        }
+                    },
                     plugins: {
                         legend: {
                             display: false
                         },
                         tooltip: {
+                            enabled: true,
                             mode: 'index',
                             intersect: false,
-                            backgroundColor: 'rgba(50, 50, 50, 0.9)',
+                            position: 'edgeAware',
+                            backgroundColor: 'rgba(30, 30, 30, 0.95)',
+                            titleColor: '#fff',
+                            bodyColor: '#fff',
+                            titleFont: { size: 13, weight: 'bold' },
+                            bodyFont: { size: 14 },
+                            padding: 12,
+                            cornerRadius: 8,
+                            displayColors: false,
+                            caretSize: 8,
+                            caretPadding: 10,
                             callbacks: {
+                                title: function(context) {
+                                    return '⏰ ' + context[0].label;
+                                },
                                 label: function(context) {
-                                    return `SOC: ${context.parsed.y}%`;
+                                    return '🔋 SOC: ' + context.parsed.y + '%';
                                 }
                             }
                         }
@@ -1052,8 +1098,12 @@ document.addEventListener('DOMContentLoaded', function () {
                         }
                     },
                     interaction: {
-                        mode: 'nearest',
+                        mode: 'index',
                         axis: 'x',
+                        intersect: false
+                    },
+                    hover: {
+                        mode: 'index',
                         intersect: false
                     }
                 }

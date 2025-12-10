@@ -23,7 +23,23 @@ html {
     background: white;
     border-radius: 12px;
     padding: 16px;
+    padding-right: 25px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    overflow: visible !important;
+}
+
+/* Ensure canvas tooltips are not clipped */
+.chart-container canvas {
+    overflow: visible !important;
+}
+
+/* SOC section specific styling */
+#soc-section {
+    overflow: visible !important;
+}
+
+#soc-section .chart-container {
+    padding-right: 35px;
 }
 
 .dark .chart-container {
