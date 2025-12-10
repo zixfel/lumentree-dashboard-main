@@ -96,10 +96,12 @@ public class HomeController : Controller
                 
                 Log.Warning("Both primary and fallback APIs failed for device {DeviceId}", deviceId);
                 return NotFound(new { 
-                    error = $"Không tìm thấy thiết bị \"{deviceId}\". Vui lòng kiểm tra lại Device ID.",
+                    error = $"Không thể kết nối đến thiết bị \"{deviceId}\". Server Lumentree có thể đang bảo trì. [v2.1]",
                     code = "DEVICE_NOT_FOUND",
                     deviceId = deviceId,
-                    suggestion = "Kiểm tra Device ID có đúng không (ví dụ: P250801055)"
+                    suggestion = "Vui lòng thử lại sau vài phút hoặc kiểm tra Device ID",
+                    fallbackTried = true,
+                    apiVersion = "2.1"
                 });
             }
 
