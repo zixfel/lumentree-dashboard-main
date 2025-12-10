@@ -82,7 +82,7 @@ public class LumentreeClient
         );
         ConfigureClient();
 
-        Log.Information("Initialized LumentreeClient with base URL: {BaseUrl}", BaseUrl);
+        Log.Debug("Initialized LumentreeClient with base URL: {BaseUrl}", BaseUrl);
     }
 
     /// <summary>
@@ -120,8 +120,8 @@ public class LumentreeClient
             }
             else
             {
-                Log.Warning("Failed to get server time. StatusCode: {StatusCode}, Content: {Content}",
-                    response.StatusCode, response.Content);
+                Log.Debug("Server time unavailable. StatusCode: {StatusCode}",
+                    response.StatusCode);
                 return null;
             }
         }
@@ -212,7 +212,7 @@ public class LumentreeClient
 
                 if (serverTimeResponse?.Data?.ServerTime == null)
                 {
-                    Log.Warning("Could not get server time, retrying...");
+                    Log.Debug("Server time unavailable, retrying...");
                     await Task.Delay(delayMilliseconds);
                     continue;
                 }
@@ -321,7 +321,7 @@ public class LumentreeClient
             return null;
         }
 
-        Log.Information("Getting PV day data for device {DeviceId} on date {QueryDate:yyyy-MM-dd}",
+        Log.Debug("Getting PV day data for device {DeviceId} on date {QueryDate:yyyy-MM-dd}",
             deviceId, queryDate);
 
         try
@@ -368,7 +368,7 @@ public class LumentreeClient
             return null;
         }
 
-        Log.Information("Getting battery day data for device {DeviceId} on date {QueryDate:yyyy-MM-dd}",
+        Log.Debug("Getting battery day data for device {DeviceId} on date {QueryDate:yyyy-MM-dd}",
             deviceId, queryDate);
 
         try
@@ -415,7 +415,7 @@ public class LumentreeClient
             return null;
         }
 
-        Log.Information("Getting other day data for device {DeviceId} on date {QueryDate:yyyy-MM-dd}",
+        Log.Debug("Getting other day data for device {DeviceId} on date {QueryDate:yyyy-MM-dd}",
             deviceId, queryDate);
 
         try

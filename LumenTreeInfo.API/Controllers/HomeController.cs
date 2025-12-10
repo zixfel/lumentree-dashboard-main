@@ -59,7 +59,7 @@ public class HomeController : Controller
             return BadRequest(new { error = "Device ID is required", code = "MISSING_DEVICE_ID" });
         }
 
-        Log.Information("Getting device info for device {DeviceId} with date {Date}", deviceId, date);
+        Log.Debug("Getting device info for device {DeviceId} with date {Date}", deviceId, date);
 
         try
         {
