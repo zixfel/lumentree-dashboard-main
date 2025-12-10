@@ -81,58 +81,145 @@ public class HomeController : Controller
                 }
             }
 
-            // OPTION 1: Check if we have MQTT cached data (fastest, most reliable)
-            var mqttData = _solarMonitor.GetCachedData(deviceId);
-            if (mqttData != null)
-            {
-                Log.Debug("Using MQTT cached data for device {DeviceId}", deviceId);
-                return Json(BuildResponseFromMqttData(deviceId, mqttData));
-            }
-            
-            // OPTION 2: Try lumentree.net API
+            // OPTION 1: Try to get historical data from APIs first
+            // Try lumentree.net API for historical chart data
             var lumentreeResult = await TryLumentreeNetFallback(deviceId, queryDate);
             if (lumentreeResult != null)
             {
-                Log.Debug("Got data from lumentree.net for device {DeviceId}", deviceId);
+                Log.Debug("Got historical data from lumentree.net for device {DeviceId}", deviceId);
                 return Json(lumentreeResult);
             }
             
-            // OPTION 3: Try old API (lesvr.suntcn.com)
-            Log.Debug("Trying legacy API for device {DeviceId}", deviceId);
+            // OPTION 2: Try old API (lesvr.suntcn.com) for historical data
+            Log.Debug("Trying legacy API for historical data for device {DeviceId}", deviceId);
             var (deviceInfo, pvData, batData, essentialLoad, grid, load) =
                 await _client.GetAllDeviceDataAsync(deviceId, queryDate);
 
-            if (deviceInfo != null)
+            if (deviceInfo != null || pvData != null)
             {
+                // Check if we have MQTT realtime data to enhance the response
+                var mqttData = _solarMonitor.GetCachedData(deviceId);
+                
                 var result = new
                 {
-                    DeviceInfo = deviceInfo,
+                    DeviceInfo = deviceInfo ?? new LumenTreeInfo.Lib.Models.LumentreeApiModels.DeviceInfo 
+                    {
+                        DeviceId = deviceId,
+                        DeviceType = "Lumentree Inverter",
+                        OnlineStatus = mqttData != null ? 1 : 0,
+                        RemarkName = "",
+                        ErrorStatus = null
+                    },
                     Pv = pvData ?? CreateDefaultPvInfo(),
                     Bat = batData ?? CreateDefaultBatData(),
                     EssentialLoad = essentialLoad ?? CreateDefaultLoadInfo("EssentialLoad"),
                     Grid = grid ?? CreateDefaultLoadInfo("Grid"),
                     Load = load ?? CreateDefaultLoadInfo("HomeLoad"),
-                    DataSource = "lesvr.suntcn.com"
+                    // Add realtime MQTT data if available
+                    RealtimeData = mqttData != null ? new {
+                        device_id = deviceId,
+                        data = new {
+                            batterySoc = mqttData.BatteryPercent,
+                            batteryVoltage = mqttData.BatteryVoltage ?? 0,
+                            batteryPower = mqttData.BatteryValue,
+                            batteryStatus = mqttData.BatteryStatus ?? (mqttData.BatteryValue > 0 ? "Discharging" : "Charging"),
+                            gridPowerFlow = mqttData.GridValue,
+                            gridStatus = mqttData.GridValue > 0 ? "Importing" : "Exporting",
+                            homeLoad = mqttData.LoadValue,
+                            totalPvPower = mqttData.PvTotalPower,
+                            pv1Power = mqttData.Pv1Power,
+                            pv2Power = mqttData.Pv2Power ?? 0,
+                            temperature = mqttData.DeviceTempValue,
+                            acOutputPower = mqttData.EssentialValue,
+                            acInputVoltage = mqttData.GridVoltageValue
+                        },
+                        cells = new {
+                            averageVoltage = 0,
+                            cellVoltages = new Dictionary<string, double>(),
+                            numberOfCells = 0
+                        }
+                    } : null,
+                    DataSource = mqttData != null ? "lesvr.suntcn.com+mqtt" : "lesvr.suntcn.com",
+                    Timestamp = mqttData?.Timestamp
                 };
                 return Json(result);
             }
+
             
-            // OPTION 4: Subscribe to device and wait for MQTT data
+            // OPTION 4: Subscribe to device and wait for MQTT data + try to get historical data
             Log.Information("No data available, subscribing to device {DeviceId} via MQTT and waiting for data...", deviceId);
             _solarMonitor.AddDevice(deviceId);
             
             // Wait longer for MQTT data (increased from 2s to 6s for better reliability)
             // Try checking data every 1 second, up to 6 times
+            DeviceRealTimeData? mqttDataReceived = null;
             for (int attempt = 1; attempt <= 6; attempt++)
             {
                 await Task.Delay(1000);
-                mqttData = _solarMonitor.GetCachedData(deviceId);
-                if (mqttData != null)
+                mqttDataReceived = _solarMonitor.GetCachedData(deviceId);
+                if (mqttDataReceived != null)
                 {
                     Log.Information("Got MQTT data after {Attempt}s for device {DeviceId}", attempt, deviceId);
-                    return Json(BuildResponseFromMqttData(deviceId, mqttData));
+                    break;
                 }
                 Log.Debug("Waiting for MQTT data... attempt {Attempt}/6", attempt);
+            }
+            
+            // If we got MQTT data, try to also fetch historical data for complete response
+            if (mqttDataReceived != null)
+            {
+                Log.Debug("Attempting to fetch historical data to combine with MQTT realtime for device {DeviceId}", deviceId);
+                var (historicalDeviceInfo, historicalPvData, historicalBatData, historicalEssentialLoad, historicalGrid, historicalLoad) =
+                    await _client.GetAllDeviceDataAsync(deviceId, queryDate);
+                
+                if (historicalPvData != null || historicalDeviceInfo != null)
+                {
+                    Log.Information("Successfully combined MQTT realtime + API historical data for device {DeviceId}", deviceId);
+                    return Json(new {
+                        DeviceInfo = historicalDeviceInfo ?? new LumenTreeInfo.Lib.Models.LumentreeApiModels.DeviceInfo 
+                        {
+                            DeviceId = deviceId,
+                            DeviceType = "Lumentree Inverter",
+                            OnlineStatus = 1,
+                            RemarkName = "",
+                            ErrorStatus = null
+                        },
+                        Pv = historicalPvData ?? CreateDefaultPvInfo(),
+                        Bat = historicalBatData ?? CreateDefaultBatData(),
+                        EssentialLoad = historicalEssentialLoad ?? CreateDefaultLoadInfo("EssentialLoad"),
+                        Grid = historicalGrid ?? CreateDefaultLoadInfo("Grid"),
+                        Load = historicalLoad ?? CreateDefaultLoadInfo("HomeLoad"),
+                        RealtimeData = new {
+                            device_id = deviceId,
+                            data = new {
+                                batterySoc = mqttDataReceived.BatteryPercent,
+                                batteryVoltage = mqttDataReceived.BatteryVoltage ?? 0,
+                                batteryPower = mqttDataReceived.BatteryValue,
+                                batteryStatus = mqttDataReceived.BatteryStatus ?? (mqttDataReceived.BatteryValue > 0 ? "Discharging" : "Charging"),
+                                gridPowerFlow = mqttDataReceived.GridValue,
+                                gridStatus = mqttDataReceived.GridValue > 0 ? "Importing" : "Exporting",
+                                homeLoad = mqttDataReceived.LoadValue,
+                                totalPvPower = mqttDataReceived.PvTotalPower,
+                                pv1Power = mqttDataReceived.Pv1Power,
+                                pv2Power = mqttDataReceived.Pv2Power ?? 0,
+                                temperature = mqttDataReceived.DeviceTempValue,
+                                acOutputPower = mqttDataReceived.EssentialValue,
+                                acInputVoltage = mqttDataReceived.GridVoltageValue
+                            },
+                            cells = new {
+                                averageVoltage = 0,
+                                cellVoltages = new Dictionary<string, double>(),
+                                numberOfCells = 0
+                            }
+                        },
+                        DataSource = "mqtt+lesvr.suntcn.com",
+                        Timestamp = mqttDataReceived.Timestamp
+                    });
+                }
+                
+                // Only MQTT data available, no historical
+                Log.Information("Returning MQTT realtime data only (no historical available) for device {DeviceId}", deviceId);
+                return Json(BuildResponseFromMqttData(deviceId, mqttDataReceived));
             }
 
             // All options failed
