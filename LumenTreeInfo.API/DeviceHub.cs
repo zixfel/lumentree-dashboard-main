@@ -223,6 +223,22 @@ public class SolarMonitorService : IHostedService, IDisposable
         }
     }
 
+    // Get cached real-time data for a device (from MQTT)
+    public DeviceRealTimeData? GetCachedData(string deviceId)
+    {
+        if (string.IsNullOrEmpty(deviceId))
+            return null;
+            
+        _latestData.TryGetValue(deviceId, out var data);
+        return data;
+    }
+    
+    // Check if device has cached data
+    public bool HasCachedData(string deviceId)
+    {
+        return !string.IsNullOrEmpty(deviceId) && _latestData.ContainsKey(deviceId);
+    }
+
     // Add device to monitoring
     public void AddDevice(string deviceId)
     {

@@ -12,14 +12,17 @@ namespace LumenTreeInfo.API.Controllers;
 public class HomeController : Controller
 {
     private readonly LumentreeClient _client;
+    private readonly SolarMonitorService _solarMonitor;
 
     /// <summary>
     /// Initializes a new instance of the HomeController
     /// </summary>
     /// <param name="client">Lumentree API client</param>
-    public HomeController(LumentreeClient client)
+    /// <param name="solarMonitor">Solar monitor service for MQTT data</param>
+    public HomeController(LumentreeClient client, SolarMonitorService solarMonitor)
     {
         _client = client;
+        _solarMonitor = solarMonitor;
     }
 
     /// <summary>
@@ -78,7 +81,15 @@ public class HomeController : Controller
                 }
             }
 
-            // PRIMARY: Try lumentree.net FIRST (more reliable)
+            // OPTION 1: Check if we have MQTT cached data (fastest, most reliable)
+            var mqttData = _solarMonitor.GetCachedData(deviceId);
+            if (mqttData != null)
+            {
+                Log.Debug("Using MQTT cached data for device {DeviceId}", deviceId);
+                return Json(BuildResponseFromMqttData(deviceId, mqttData));
+            }
+            
+            // OPTION 2: Try lumentree.net API
             var lumentreeResult = await TryLumentreeNetFallback(deviceId, queryDate);
             if (lumentreeResult != null)
             {
@@ -86,36 +97,49 @@ public class HomeController : Controller
                 return Json(lumentreeResult);
             }
             
-            // FALLBACK: Try old API (lesvr.suntcn.com) if lumentree.net fails
-            Log.Debug("lumentree.net unavailable, trying legacy API for device {DeviceId}", deviceId);
+            // OPTION 3: Try old API (lesvr.suntcn.com)
+            Log.Debug("Trying legacy API for device {DeviceId}", deviceId);
             var (deviceInfo, pvData, batData, essentialLoad, grid, load) =
                 await _client.GetAllDeviceDataAsync(deviceId, queryDate);
 
-            if (deviceInfo == null)
+            if (deviceInfo != null)
             {
-                Log.Warning("All APIs failed for device {DeviceId}", deviceId);
-                return NotFound(new { 
-                    error = $"Không tìm thấy thiết bị \"{deviceId}\". Vui lòng kiểm tra lại Device ID.",
-                    code = "DEVICE_NOT_FOUND",
-                    deviceId = deviceId,
-                    suggestion = "Kiểm tra Device ID có đúng không",
-                    apiVersion = "3.0"
-                });
+                var result = new
+                {
+                    DeviceInfo = deviceInfo,
+                    Pv = pvData ?? CreateDefaultPvInfo(),
+                    Bat = batData ?? CreateDefaultBatData(),
+                    EssentialLoad = essentialLoad ?? CreateDefaultLoadInfo("EssentialLoad"),
+                    Grid = grid ?? CreateDefaultLoadInfo("Grid"),
+                    Load = load ?? CreateDefaultLoadInfo("HomeLoad"),
+                    DataSource = "lesvr.suntcn.com"
+                };
+                return Json(result);
+            }
+            
+            // OPTION 4: Subscribe to device and wait for MQTT data
+            Log.Debug("No data available, subscribing to device {DeviceId} via MQTT", deviceId);
+            _solarMonitor.AddDevice(deviceId);
+            
+            // Wait briefly for MQTT data
+            await Task.Delay(2000);
+            
+            mqttData = _solarMonitor.GetCachedData(deviceId);
+            if (mqttData != null)
+            {
+                Log.Debug("Got MQTT data after subscribing for device {DeviceId}", deviceId);
+                return Json(BuildResponseFromMqttData(deviceId, mqttData));
             }
 
-            // Handle null data gracefully - create default empty objects if needed
-            var result = new
-            {
-                DeviceInfo = deviceInfo,
-                Pv = pvData ?? CreateDefaultPvInfo(),
-                Bat = batData ?? CreateDefaultBatData(),
-                EssentialLoad = essentialLoad ?? CreateDefaultLoadInfo("EssentialLoad"),
-                Grid = grid ?? CreateDefaultLoadInfo("Grid"),
-                Load = load ?? CreateDefaultLoadInfo("HomeLoad")
-            };
-
-            Log.Information("Successfully retrieved and returning data for device {DeviceId}", deviceId);
-            return Json(result);
+            // All options failed
+            Log.Warning("All data sources failed for device {DeviceId}", deviceId);
+            return NotFound(new { 
+                error = $"Không tìm thấy thiết bị \"{deviceId}\". Thiết bị có thể offline hoặc Device ID không đúng.",
+                code = "DEVICE_NOT_FOUND",
+                deviceId = deviceId,
+                suggestion = "Kiểm tra Device ID và đảm bảo thiết bị đang online",
+                apiVersion = "3.1"
+            });
         }
         catch (Exception ex)
         {
@@ -129,6 +153,80 @@ public class HomeController : Controller
     }
     
     /// <summary>
+    /// Build API response from MQTT cached data
+    /// </summary>
+    private object BuildResponseFromMqttData(string deviceId, DeviceRealTimeData mqttData)
+    {
+        var emptyChartData = new List<int>(new int[288]);
+        
+        return new {
+            DeviceInfo = new {
+                DeviceId = deviceId,
+                DeviceType = "Lumentree Inverter",
+                OnlineStatus = 1,
+                RemarkName = "",
+                ErrorStatus = (string?)null
+            },
+            Pv = new {
+                TableKey = "pv",
+                TableName = "PV发电量",
+                TableValue = 0,
+                TableValueInfo = emptyChartData
+            },
+            Bat = new {
+                Bats = new[] {
+                    new { TableName = "电池充电电量", TableValue = 0, TableKey = "bat" },
+                    new { TableName = "电池放电电量", TableValue = 0, TableKey = "batF" }
+                },
+                TableValueInfo = emptyChartData
+            },
+            EssentialLoad = new {
+                TableKey = "essentialLoad",
+                TableName = "不断电负载耗电量",
+                TableValue = 0,
+                TableValueInfo = emptyChartData
+            },
+            Grid = new {
+                TableKey = "grid",
+                TableName = "电网输入电量",
+                TableValue = 0,
+                TableValueInfo = emptyChartData
+            },
+            Load = new {
+                TableKey = "homeload",
+                TableName = "家庭负载耗电量",
+                TableValue = 0,
+                TableValueInfo = emptyChartData
+            },
+            RealtimeData = new {
+                device_id = deviceId,
+                data = new {
+                    batterySoc = mqttData.BatteryPercent,
+                    batteryVoltage = mqttData.BatteryVoltage ?? 0,
+                    batteryPower = mqttData.BatteryValue,
+                    batteryStatus = mqttData.BatteryStatus ?? (mqttData.BatteryValue > 0 ? "Discharging" : "Charging"),
+                    gridPowerFlow = mqttData.GridValue,
+                    gridStatus = mqttData.GridValue > 0 ? "Importing" : "Exporting",
+                    homeLoad = mqttData.LoadValue,
+                    totalPvPower = mqttData.PvTotalPower,
+                    pv1Power = mqttData.Pv1Power,
+                    pv2Power = mqttData.Pv2Power ?? 0,
+                    temperature = mqttData.DeviceTempValue,
+                    acOutputPower = mqttData.EssentialValue,
+                    acInputVoltage = mqttData.GridVoltageValue
+                },
+                cells = new {
+                    averageVoltage = 0,
+                    cellVoltages = new Dictionary<string, double>(),
+                    numberOfCells = 0
+                }
+            },
+            DataSource = "mqtt",
+            Timestamp = mqttData.Timestamp
+        };
+    }
+    
+    /// <summary>
     /// Fallback to lumentree.net API when primary API fails
     /// </summary>
     private async Task<object?> TryLumentreeNetFallback(string deviceId, DateTime queryDate)
@@ -137,7 +235,13 @@ public class HomeController : Controller
         {
             using var httpClient = new HttpClient();
             httpClient.Timeout = TimeSpan.FromSeconds(15);
-            httpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Linux; Android 10)");
+            
+            // Add headers to bypass Cloudflare
+            httpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+            httpClient.DefaultRequestHeaders.Add("Accept", "application/json, text/plain, */*");
+            httpClient.DefaultRequestHeaders.Add("Accept-Language", "en-US,en;q=0.9,vi;q=0.8");
+            httpClient.DefaultRequestHeaders.Add("Referer", "https://lumentree.net/");
+            httpClient.DefaultRequestHeaders.Add("Origin", "https://lumentree.net");
             
             // Get realtime data from lumentree.net
             var realtimeUrl = $"https://lumentree.net/api/realtime/{deviceId}";
