@@ -56,7 +56,7 @@ public class HomeController : Controller
         if (string.IsNullOrEmpty(deviceId))
         {
             Log.Warning("Device ID is null or empty");
-            return BadRequest("Device ID is required");
+            return BadRequest(new { error = "Device ID is required", code = "MISSING_DEVICE_ID" });
         }
 
         Log.Information("Getting device info for device {DeviceId} with date {Date}", deviceId, date);
@@ -84,19 +84,24 @@ public class HomeController : Controller
 
             if (deviceInfo == null)
             {
-                Log.Warning("No device info found for device {DeviceId}", deviceId);
-                return NotFound($"Device {deviceId} not found or data retrieval failed");
+                Log.Warning("No device info found for device {DeviceId}. This could be due to: invalid device ID, API connection issues, or expired token.", deviceId);
+                return NotFound(new { 
+                    error = $"Không tìm thấy thiết bị {deviceId} hoặc không thể lấy dữ liệu. Vui lòng kiểm tra lại Device ID.",
+                    code = "DEVICE_NOT_FOUND",
+                    deviceId = deviceId,
+                    suggestion = "Kiểm tra Device ID có đúng không (ví dụ: P250801055)"
+                });
             }
 
-            // Return the data in JSON format
+            // Handle null data gracefully - create default empty objects if needed
             var result = new
             {
                 DeviceInfo = deviceInfo,
-                Pv = pvData,
-                Bat = batData,
-                EssentialLoad = essentialLoad,
-                Grid = grid,
-                Load = load
+                Pv = pvData ?? CreateDefaultPvInfo(),
+                Bat = batData ?? CreateDefaultBatData(),
+                EssentialLoad = essentialLoad ?? CreateDefaultLoadInfo("EssentialLoad"),
+                Grid = grid ?? CreateDefaultLoadInfo("Grid"),
+                Load = load ?? CreateDefaultLoadInfo("HomeLoad")
             };
 
             Log.Information("Successfully retrieved and returning data for device {DeviceId}", deviceId);
@@ -105,8 +110,56 @@ public class HomeController : Controller
         catch (Exception ex)
         {
             Log.Error(ex, "Error occurred while getting device data for {DeviceId}", deviceId);
-            return StatusCode(500, "An error occurred while processing your request");
+            return StatusCode(500, new { 
+                error = "Đã xảy ra lỗi khi xử lý yêu cầu. Vui lòng thử lại sau.",
+                code = "INTERNAL_ERROR",
+                details = ex.Message
+            });
         }
+    }
+
+    /// <summary>
+    /// Creates a default PV info object for cases when data is not available
+    /// </summary>
+    private static LumenTreeInfo.Lib.Models.LumentreeApiModels.PVInfo CreateDefaultPvInfo()
+    {
+        return new LumenTreeInfo.Lib.Models.LumentreeApiModels.PVInfo
+        {
+            TableKey = "pv",
+            TableName = "PV",
+            TableValue = 0,
+            TableValueInfo = new List<int>()
+        };
+    }
+
+    /// <summary>
+    /// Creates a default battery data object for cases when data is not available
+    /// </summary>
+    private static LumenTreeInfo.Lib.Models.LumentreeApiModels.BatData CreateDefaultBatData()
+    {
+        return new LumenTreeInfo.Lib.Models.LumentreeApiModels.BatData
+        {
+            Bats = new List<LumenTreeInfo.Lib.Models.LumentreeApiModels.BatInfo>
+            {
+                new LumenTreeInfo.Lib.Models.LumentreeApiModels.BatInfo { TableName = "Charge", TableKey = "charge", TableValue = 0 },
+                new LumenTreeInfo.Lib.Models.LumentreeApiModels.BatInfo { TableName = "Discharge", TableKey = "discharge", TableValue = 0 }
+            },
+            TableValueInfo = new List<int>()
+        };
+    }
+
+    /// <summary>
+    /// Creates a default load info object for cases when data is not available
+    /// </summary>
+    private static LumenTreeInfo.Lib.Models.LumentreeApiModels.LoadInfo CreateDefaultLoadInfo(string name)
+    {
+        return new LumenTreeInfo.Lib.Models.LumentreeApiModels.LoadInfo
+        {
+            TableKey = name.ToLower(),
+            TableName = name,
+            TableValue = 0,
+            TableValueInfo = new List<int>()
+        };
     }
 
     /// <summary>

@@ -47,7 +47,8 @@ public class Program
             app.UseHsts();
         }
 
-        app.UseHttpsRedirection();
+        // Only use HTTPS redirection in production with valid certificates
+        // app.UseHttpsRedirection();
         app.UseStaticFiles();
 
         app.UseRouting();

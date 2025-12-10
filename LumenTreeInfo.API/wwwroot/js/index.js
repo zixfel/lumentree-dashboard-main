@@ -336,11 +336,27 @@ document.addEventListener('DOMContentLoaded', function () {
         hideError();
 
         fetch(`/device/${deviceId}?date=${date}`)
-            .then(response => {
-                if (!response.ok) throw new Error(`Server error: ${response.status}`);
+            .then(async response => {
+                if (!response.ok) {
+                    // Try to parse error response as JSON
+                    try {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || errorData.suggestion || `Server error: ${response.status}`);
+                    } catch (parseError) {
+                        // If parsing fails, use status code message
+                        if (response.status === 404) {
+                            throw new Error(`Không tìm thấy thiết bị "${deviceId}". Vui lòng kiểm tra lại Device ID.`);
+                        }
+                        throw new Error(`Server error: ${response.status}`);
+                    }
+                }
                 return response.json();
             })
             .then(data => {
+                // Check if data contains error field (server returned error as 200)
+                if (data.error) {
+                    throw new Error(data.error);
+                }
                 console.log("Data received:", data);
                 processData(data);
                 showCompactSearchBar(deviceId, date);
@@ -350,7 +366,7 @@ document.addEventListener('DOMContentLoaded', function () {
             })
             .catch(error => {
                 console.error("Fetch error:", error);
-                showError('Lỗi tải dữ liệu: ' + error.message);
+                showError(error.message || 'Lỗi tải dữ liệu. Vui lòng thử lại sau.');
             })
             .finally(() => {
                 showLoading(false);
