@@ -23,7 +23,11 @@ public class LumentreeClient
 
     // Cache keys and expiration times
     private const string TokenCacheKeyPrefix = "token_";
-    private const int TokenExpirationMinutes = 10;
+    private const int TokenExpirationMinutes = 5; // Reduced from 10 to 5 for fresher tokens
+    
+    // Retry configuration
+    private const int MaxTokenRetries = 8; // Increased from 5
+    private const int RetryDelayMs = 800; // Increased from 500
 
     // Client configuration
     private readonly RestClient _client;
@@ -196,24 +200,22 @@ public class LumentreeClient
             return cachedToken;
         }
 
-        const int maxRetries = 5;
-        const int delayMilliseconds = 500;
         string token = null;
 
-        for (int attempt = 1; attempt <= maxRetries; attempt++)
+        for (int attempt = 1; attempt <= MaxTokenRetries; attempt++)
         {
             try
             {
                 Log.Debug("Token generation attempt {Attempt}/{MaxRetries} for device {DeviceId}",
-                    attempt, maxRetries, deviceId);
+                    attempt, MaxTokenRetries, deviceId);
 
                 // Get server time
                 var serverTimeResponse = await GetServerTimeAsync();
 
                 if (serverTimeResponse?.Data?.ServerTime == null)
                 {
-                    Log.Warning("Could not get server time, retrying...");
-                    await Task.Delay(delayMilliseconds);
+                    Log.Warning("Could not get server time on attempt {Attempt}, retrying...", attempt);
+                    await Task.Delay(RetryDelayMs * attempt); // Exponential backoff
                     continue;
                 }
 
@@ -237,7 +239,7 @@ public class LumentreeClient
                     break;
                 }
 
-                Log.Warning("Failed to generate token on attempt {Attempt}", attempt);
+                Log.Warning("Failed to generate token on attempt {Attempt}/{MaxRetries}", attempt, MaxTokenRetries);
             }
             catch (Exception ex)
             {
@@ -245,17 +247,19 @@ public class LumentreeClient
                     attempt, deviceId);
             }
 
-            // Only delay if this isn't the last attempt
-            if (attempt < maxRetries)
+            // Exponential backoff delay
+            if (attempt < MaxTokenRetries)
             {
-                await Task.Delay(delayMilliseconds);
+                var delay = RetryDelayMs * Math.Min(attempt, 4); // Cap at 4x delay
+                Log.Debug("Waiting {Delay}ms before retry...", delay);
+                await Task.Delay(delay);
             }
         }
 
         if (string.IsNullOrEmpty(token))
         {
             Log.Error("Failed to generate token for device {DeviceId} after {MaxRetries} attempts",
-                deviceId, maxRetries);
+                deviceId, MaxTokenRetries);
         }
 
         return token;
@@ -448,7 +452,7 @@ public class LumentreeClient
     }
 
     /// <summary>
-    /// Gets all device data for a specific date in a single operation
+    /// Gets all device data for a specific date in a single operation with enhanced retry logic
     /// </summary>
     /// <param name="deviceId">The device ID</param>
     /// <param name="queryDate">The date to query data for</param>
@@ -465,73 +469,113 @@ public class LumentreeClient
         Log.Information("Getting all data for device {DeviceId} on date {QueryDate:yyyy-MM-dd}",
             deviceId, queryDate);
 
-        try
+        const int maxOverallRetries = 3;
+        
+        for (int overallAttempt = 1; overallAttempt <= maxOverallRetries; overallAttempt++)
         {
-            // Get token with caching
-            string token = await GenerateToken(deviceId);
-
-            if (string.IsNullOrEmpty(token))
+            try
             {
-                Log.Error("Failed to obtain token for device {DeviceId}", deviceId);
-                return (null, null, null, null, null, null);
-            }
-
-            // Get device info
-            var deviceResponse = await GetDeviceInfoAsync(deviceId, token);
-
-            // If device info request fails with this token, try regenerating the token once
-            if (deviceResponse == null)
-            {
-                Log.Warning("Device info request failed, regenerating token for device {DeviceId}", deviceId);
-
-                // Remove cached token if it exists
-                if (_cacheService != null)
+                // Clear cached token on retry attempts to force fresh token
+                if (overallAttempt > 1 && _cacheService != null)
                 {
+                    Log.Information("Retry attempt {Attempt}/{MaxRetries} - clearing cached token for device {DeviceId}", 
+                        overallAttempt, maxOverallRetries, deviceId);
                     _cacheService.Remove($"{TokenCacheKeyPrefix}{deviceId}");
+                    await Task.Delay(1000 * overallAttempt); // Wait before retry
                 }
 
-                // Try again with a fresh token
-                token = await GenerateToken(deviceId);
+                // Get token with caching
+                string token = await GenerateToken(deviceId);
 
                 if (string.IsNullOrEmpty(token))
                 {
-                    Log.Error("Failed to obtain fresh token for device {DeviceId}", deviceId);
-                    return (null, null, null, null, null, null);
+                    Log.Warning("Failed to obtain token for device {DeviceId} on attempt {Attempt}", 
+                        deviceId, overallAttempt);
+                    continue;
                 }
 
-                deviceResponse = await GetDeviceInfoAsync(deviceId, token);
+                // Get device info
+                var deviceResponse = await GetDeviceInfoAsync(deviceId, token);
 
+                // If device info request fails with this token, try regenerating the token
                 if (deviceResponse == null)
                 {
-                    Log.Error("Device info request failed even with fresh token for device {DeviceId}", deviceId);
-                    return (null, null, null, null, null, null);
+                    Log.Warning("Device info request failed on attempt {Attempt}, regenerating token for device {DeviceId}", 
+                        overallAttempt, deviceId);
+
+                    // Remove cached token
+                    if (_cacheService != null)
+                    {
+                        _cacheService.Remove($"{TokenCacheKeyPrefix}{deviceId}");
+                    }
+
+                    // Try again with a fresh token
+                    token = await GenerateToken(deviceId);
+
+                    if (string.IsNullOrEmpty(token))
+                    {
+                        Log.Warning("Failed to obtain fresh token for device {DeviceId} on attempt {Attempt}", 
+                            deviceId, overallAttempt);
+                        continue;
+                    }
+
+                    deviceResponse = await GetDeviceInfoAsync(deviceId, token);
+
+                    if (deviceResponse == null)
+                    {
+                        Log.Warning("Device info request still failed for device {DeviceId} on attempt {Attempt}", 
+                            deviceId, overallAttempt);
+                        continue;
+                    }
+                }
+
+                // Get all other data in parallel with timeout
+                var pvDataTask = GetPvDayDataAsync(deviceId, queryDate, token);
+                var batDataTask = GetBatDayDataAsync(deviceId, queryDate, token);
+                var otherDataTask = GetOtherDayDataAsync(deviceId, queryDate, token);
+
+                // Wait with timeout
+                var allTasks = Task.WhenAll(pvDataTask, batDataTask, otherDataTask);
+                var completedTask = await Task.WhenAny(allTasks, Task.Delay(TimeSpan.FromSeconds(45)));
+                
+                if (completedTask != allTasks)
+                {
+                    Log.Warning("Data fetch timeout for device {DeviceId} on attempt {Attempt}", deviceId, overallAttempt);
+                    continue;
+                }
+
+                var deviceInfo = deviceResponse?.Data?.Devices?.FirstOrDefault();
+                var pvData = pvDataTask.Result?.Data?.Pv;
+                var batData = batDataTask.Result?.Data;
+                var essentialLoad = otherDataTask.Result?.Data?.EssentialLoad;
+                var grid = otherDataTask.Result?.Data?.Grid;
+                var load = otherDataTask.Result?.Data?.Homeload;
+
+                // Validate we got actual data
+                if (deviceInfo == null)
+                {
+                    Log.Warning("Got null deviceInfo for device {DeviceId} on attempt {Attempt}", deviceId, overallAttempt);
+                    continue;
+                }
+
+                Log.Information("Successfully retrieved all data for device {DeviceId} on date {QueryDate:yyyy-MM-dd} (attempt {Attempt})",
+                    deviceId, queryDate, overallAttempt);
+
+                return (deviceInfo, pvData, batData, essentialLoad, grid, load);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Error on attempt {Attempt} while getting all data for device {DeviceId} on date {QueryDate:yyyy-MM-dd}",
+                    overallAttempt, deviceId, queryDate);
+                
+                if (overallAttempt == maxOverallRetries)
+                {
+                    throw; // Re-throw on last attempt to be caught by controller
                 }
             }
-
-            // Get all other data in parallel
-            var pvDataTask = GetPvDayDataAsync(deviceId, queryDate, token);
-            var batDataTask = GetBatDayDataAsync(deviceId, queryDate, token);
-            var otherDataTask = GetOtherDayDataAsync(deviceId, queryDate, token);
-
-            await Task.WhenAll(pvDataTask, batDataTask, otherDataTask);
-
-            var deviceInfo = deviceResponse?.Data?.Devices?.FirstOrDefault();
-            var pvData = pvDataTask.Result?.Data?.Pv;
-            var batData = batDataTask.Result?.Data;
-            var essentialLoad = otherDataTask.Result?.Data?.EssentialLoad;
-            var grid = otherDataTask.Result?.Data?.Grid;
-            var load = otherDataTask.Result?.Data?.Homeload;
-
-            Log.Information("Successfully retrieved all data for device {DeviceId} on date {QueryDate:yyyy-MM-dd}",
-                deviceId, queryDate);
-
-            return (deviceInfo, pvData, batData, essentialLoad, grid, load);
         }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Error occurred while getting all data for device {DeviceId} on date {QueryDate:yyyy-MM-dd}",
-                deviceId, queryDate);
-            return (null, null, null, null, null, null);
-        }
+        
+        Log.Error("All {MaxRetries} attempts failed for device {DeviceId}", maxOverallRetries, deviceId);
+        return (null, null, null, null, null, null);
     }
 }

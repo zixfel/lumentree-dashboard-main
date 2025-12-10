@@ -336,13 +336,23 @@ document.addEventListener('DOMContentLoaded', function () {
     // DATA FETCHING
     // ========================================
     
-    function fetchData() {
+    // Retry state
+    let fetchRetryCount = 0;
+    const MAX_FETCH_RETRIES = 3;
+    const RETRY_DELAY_MS = 2000;
+    
+    function fetchData(isRetry = false) {
         const deviceId = document.getElementById('deviceId')?.value?.trim();
         const date = document.getElementById('dateInput')?.value;
 
         if (!deviceId) {
             showError('Vui lòng nhập Device ID');
             return;
+        }
+        
+        // Reset retry count on new fetch (not a retry)
+        if (!isRetry) {
+            fetchRetryCount = 0;
         }
 
         // Update URL
@@ -358,21 +368,31 @@ document.addEventListener('DOMContentLoaded', function () {
 
         showLoading(true);
         hideError();
+        
+        // Show retry info if retrying
+        if (isRetry && fetchRetryCount > 0) {
+            console.log(`Retrying fetch (attempt ${fetchRetryCount + 1}/${MAX_FETCH_RETRIES + 1})...`);
+        }
 
         fetch(`/device/${deviceId}?date=${date}`)
             .then(async response => {
                 if (!response.ok) {
                     // Try to parse error response as JSON
+                    let errorData = null;
                     try {
-                        const errorData = await response.json();
-                        throw new Error(errorData.error || errorData.suggestion || `Server error: ${response.status}`);
-                    } catch (parseError) {
-                        // If parsing fails, use status code message
-                        if (response.status === 404) {
-                            throw new Error(`Không tìm thấy thiết bị "${deviceId}". Vui lòng kiểm tra lại Device ID.`);
-                        }
-                        throw new Error(`Server error: ${response.status}`);
+                        errorData = await response.json();
+                    } catch (e) {
+                        // Ignore parse error
                     }
+                    
+                    // Check if server says we can retry
+                    const canRetry = errorData?.canRetry === true;
+                    const errorMessage = errorData?.error || errorData?.message || `Server error: ${response.status}`;
+                    
+                    const error = new Error(errorMessage);
+                    error.canRetry = canRetry;
+                    error.status = response.status;
+                    throw error;
                 }
                 return response.json();
             })
@@ -381,6 +401,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (data.error) {
                     throw new Error(data.error);
                 }
+                
+                // Success - reset retry count
+                fetchRetryCount = 0;
+                
                 console.log("Data received:", data);
                 processData(data);
                 showCompactSearchBar(deviceId, date);
@@ -390,10 +414,35 @@ document.addEventListener('DOMContentLoaded', function () {
             })
             .catch(error => {
                 console.error("Fetch error:", error);
-                showError(error.message || 'Lỗi tải dữ liệu. Vui lòng thử lại sau.');
+                
+                // Auto-retry logic for recoverable errors
+                const shouldRetry = (error.canRetry || error.status === 404 || error.status === 500 || error.status === 503) 
+                                    && fetchRetryCount < MAX_FETCH_RETRIES;
+                
+                if (shouldRetry) {
+                    fetchRetryCount++;
+                    console.log(`Will retry in ${RETRY_DELAY_MS}ms (attempt ${fetchRetryCount}/${MAX_FETCH_RETRIES})...`);
+                    
+                    // Show loading with retry message
+                    showError(`Đang kết nối lại... (lần ${fetchRetryCount}/${MAX_FETCH_RETRIES})`);
+                    
+                    setTimeout(() => {
+                        fetchData(true); // Pass true to indicate this is a retry
+                    }, RETRY_DELAY_MS * fetchRetryCount); // Exponential backoff
+                } else {
+                    // Max retries reached or non-recoverable error
+                    let errorMsg = error.message || 'Lỗi tải dữ liệu.';
+                    if (fetchRetryCount >= MAX_FETCH_RETRIES) {
+                        errorMsg += ' Vui lòng kiểm tra Device ID hoặc thử lại sau.';
+                    }
+                    showError(errorMsg);
+                }
             })
             .finally(() => {
-                showLoading(false);
+                // Only hide loading if not retrying
+                if (fetchRetryCount === 0 || fetchRetryCount >= MAX_FETCH_RETRIES) {
+                    showLoading(false);
+                }
             });
     }
     
