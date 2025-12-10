@@ -85,16 +85,16 @@ public class HomeController : Controller
             // If primary API fails, try fallback to lumentree.net
             if (deviceInfo == null)
             {
-                Log.Warning("Primary API failed for device {DeviceId}, trying lumentree.net fallback...", deviceId);
+                Log.Debug("Primary API unavailable for device {DeviceId}, using lumentree.net fallback", deviceId);
                 
                 var fallbackResult = await TryLumentreeNetFallback(deviceId, queryDate);
                 if (fallbackResult != null)
                 {
-                    Log.Information("Successfully got data from lumentree.net fallback for device {DeviceId}", deviceId);
+                    Log.Debug("Got data from lumentree.net fallback for device {DeviceId}", deviceId);
                     return Json(fallbackResult);
                 }
                 
-                Log.Warning("Both primary and fallback APIs failed for device {DeviceId}", deviceId);
+                Log.Warning("Both APIs failed for device {DeviceId}", deviceId);
                 return NotFound(new { 
                     error = $"Không thể kết nối đến thiết bị \"{deviceId}\". Server Lumentree có thể đang bảo trì. [v2.1]",
                     code = "DEVICE_NOT_FOUND",

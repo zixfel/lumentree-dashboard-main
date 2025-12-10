@@ -184,7 +184,7 @@ public class LumentreeClient
             return null;
         }
 
-        Log.Information("Generating token for device {DeviceId}", deviceId);
+        Log.Debug("Generating token for device {DeviceId}", deviceId);
 
         // Check if token exists in cache
         string cacheKey = $"{TokenCacheKeyPrefix}{deviceId}";
@@ -192,12 +192,12 @@ public class LumentreeClient
         if (_cacheService != null && _cacheService.Exists(cacheKey))
         {
             string cachedToken = _cacheService.Get<string>(cacheKey);
-            Log.Information("Using cached token for device {DeviceId}", deviceId);
+            Log.Debug("Using cached token for device {DeviceId}", deviceId);
             return cachedToken;
         }
 
-        const int maxRetries = 5;
-        const int delayMilliseconds = 500;
+        const int maxRetries = 2;
+        const int delayMilliseconds = 300;
         string token = null;
 
         for (int attempt = 1; attempt <= maxRetries; attempt++)
@@ -223,7 +223,7 @@ public class LumentreeClient
 
                 if (!string.IsNullOrEmpty(token))
                 {
-                    Log.Information("Successfully generated token for device {DeviceId} on attempt {Attempt}",
+                    Log.Debug("Successfully generated token for device {DeviceId} on attempt {Attempt}",
                         deviceId, attempt);
 
                     // Cache the token if caching service is available
@@ -254,7 +254,7 @@ public class LumentreeClient
 
         if (string.IsNullOrEmpty(token))
         {
-            Log.Error("Failed to generate token for device {DeviceId} after {MaxRetries} attempts",
+            Log.Debug("Primary API unavailable - failed to generate token for device {DeviceId} after {MaxRetries} attempts",
                 deviceId, maxRetries);
         }
 
@@ -275,7 +275,7 @@ public class LumentreeClient
             return null;
         }
 
-        Log.Information("Getting device info for {DeviceId}", deviceId);
+        Log.Debug("Getting device info for {DeviceId}", deviceId);
 
         try
         {
@@ -462,7 +462,7 @@ public class LumentreeClient
             return (null, null, null, null, null, null);
         }
 
-        Log.Information("Getting all data for device {DeviceId} on date {QueryDate:yyyy-MM-dd}",
+        Log.Debug("Getting all data for device {DeviceId} on date {QueryDate:yyyy-MM-dd}",
             deviceId, queryDate);
 
         try
@@ -472,7 +472,7 @@ public class LumentreeClient
 
             if (string.IsNullOrEmpty(token))
             {
-                Log.Error("Failed to obtain token for device {DeviceId}", deviceId);
+                Log.Debug("Primary API unavailable - failed to obtain token for device {DeviceId}", deviceId);
                 return (null, null, null, null, null, null);
             }
 
@@ -495,7 +495,7 @@ public class LumentreeClient
 
                 if (string.IsNullOrEmpty(token))
                 {
-                    Log.Error("Failed to obtain fresh token for device {DeviceId}", deviceId);
+                    Log.Debug("Primary API unavailable - failed to obtain fresh token for device {DeviceId}", deviceId);
                     return (null, null, null, null, null, null);
                 }
 
@@ -503,7 +503,7 @@ public class LumentreeClient
 
                 if (deviceResponse == null)
                 {
-                    Log.Error("Device info request failed even with fresh token for device {DeviceId}", deviceId);
+                    Log.Debug("Primary API unavailable - device info request failed for device {DeviceId}", deviceId);
                     return (null, null, null, null, null, null);
                 }
             }
@@ -522,7 +522,7 @@ public class LumentreeClient
             var grid = otherDataTask.Result?.Data?.Grid;
             var load = otherDataTask.Result?.Data?.Homeload;
 
-            Log.Information("Successfully retrieved all data for device {DeviceId} on date {QueryDate:yyyy-MM-dd}",
+            Log.Debug("Successfully retrieved all data for device {DeviceId} on date {QueryDate:yyyy-MM-dd}",
                 deviceId, queryDate);
 
             return (deviceInfo, pvData, batData, essentialLoad, grid, load);
