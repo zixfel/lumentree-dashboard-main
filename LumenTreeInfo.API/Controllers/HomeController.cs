@@ -118,21 +118,25 @@ public class HomeController : Controller
             }
             
             // OPTION 4: Subscribe to device and wait for MQTT data
-            Log.Debug("No data available, subscribing to device {DeviceId} via MQTT", deviceId);
+            Log.Information("No data available, subscribing to device {DeviceId} via MQTT and waiting for data...", deviceId);
             _solarMonitor.AddDevice(deviceId);
             
-            // Wait briefly for MQTT data
-            await Task.Delay(2000);
-            
-            mqttData = _solarMonitor.GetCachedData(deviceId);
-            if (mqttData != null)
+            // Wait longer for MQTT data (increased from 2s to 6s for better reliability)
+            // Try checking data every 1 second, up to 6 times
+            for (int attempt = 1; attempt <= 6; attempt++)
             {
-                Log.Debug("Got MQTT data after subscribing for device {DeviceId}", deviceId);
-                return Json(BuildResponseFromMqttData(deviceId, mqttData));
+                await Task.Delay(1000);
+                mqttData = _solarMonitor.GetCachedData(deviceId);
+                if (mqttData != null)
+                {
+                    Log.Information("Got MQTT data after {Attempt}s for device {DeviceId}", attempt, deviceId);
+                    return Json(BuildResponseFromMqttData(deviceId, mqttData));
+                }
+                Log.Debug("Waiting for MQTT data... attempt {Attempt}/6", attempt);
             }
 
             // All options failed
-            Log.Warning("All data sources failed for device {DeviceId}", deviceId);
+            Log.Warning("All data sources failed for device {DeviceId} after 6 seconds", deviceId);
             return NotFound(new { 
                 error = $"Không tìm thấy thiết bị \"{deviceId}\". Thiết bị có thể offline hoặc Device ID không đúng.",
                 code = "DEVICE_NOT_FOUND",
@@ -140,11 +144,13 @@ public class HomeController : Controller
                 suggestions = new[] {
                     "Kiểm tra lại Device ID - ID thường bắt đầu bằng P, H hoặc các ký tự khác theo loại thiết bị",
                     "Đảm bảo thiết bị đang online và kết nối internet",
+                    "Thử refresh trang sau vài giây - lần đầu tiên kết nối có thể cần thêm thời gian",
                     "Kiểm tra xem thiết bị có hiển thị trên app Lumentree không",
                     $"Thử test connectivity tại: /debug/connectivity?deviceId={deviceId}"
                 },
-                help = "Nếu bạn mới mua thiết bị, vui lòng đợi 5-10 phút để hệ thống đồng bộ dữ liệu",
-                apiVersion = "3.1"
+                help = "Nếu bạn mới mua thiết bị, vui lòng đợi 5-10 phút để hệ thống đồng bộ dữ liệu. Với thiết bị đã kích hoạt, hãy thử refresh lại trang sau vài giây.",
+                apiVersion = "3.2",
+                mqttStatus = "subscribed_waiting_for_data"
             });
         }
         catch (Exception ex)
