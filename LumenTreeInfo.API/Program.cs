@@ -82,4 +82,4 @@ public class Program
 
         Log.Information("Serilog configured with log path: {LogPath}", logPath);
     }
-}
+}// Trigger redeploy Wed Dec 10 12:43:08 UTC 2025
