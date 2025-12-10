@@ -6,6 +6,7 @@
 ![.NET](https://img.shields.io/badge/.NET-8.0-purple.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Railway](https://img.shields.io/badge/deploy-Railway-black.svg)
+![SignalR](https://img.shields.io/badge/realtime-SignalR-orange.svg)
 
 **Hệ thống giám sát năng lượng mặt trời thời gian thực cho biến tần Lumentree**
 
@@ -15,191 +16,192 @@
 
 ---
 
-## Giới thiệu
+## 📸 Ảnh Chụp Màn Hình
+
+### Luồng Năng Lượng Thời Gian Thực
+<div align="center">
+<img src="screenshots/energy-flow.png" alt="Luồng năng lượng thời gian thực" width="100%"/>
+</div>
+
+> Giao diện chính hiển thị luồng năng lượng giữa các thành phần: **PV (Quang điện)** → **Biến tần Lumentree** → **Pin lưu trữ** / **Lưới điện EVN** / **Tải tiêu thụ**
+
+### Biểu Đồ Sản Lượng Điện
+<div align="center">
+<img src="screenshots/chart.png" alt="Biểu đồ sản lượng điện" width="100%"/>
+</div>
+
+> Biểu đồ theo dõi công suất trong ngày: **PV (vàng)**, **Pin (xanh lá)**, **Lưới điện (xanh dương)**, **Tải (tím)**
+
+### Điện Áp Cell Pin
+<div align="center">
+<img src="screenshots/battery-cell.png" alt="Điện áp cell pin" width="100%"/>
+</div>
+
+> Theo dõi điện áp từng cell pin với thông số: **Trung bình**, **Cao nhất**, **Thấp nhất**, **Độ lệch**
+
+---
+
+## 🎯 Giới Thiệu
 
 **LightEarth Web Pro** là ứng dụng web toàn diện để giám sát và trực quan hóa dữ liệu năng lượng từ hệ thống điện mặt trời Lumentree. Ứng dụng cung cấp giao diện trực quan để theo dõi sản lượng điện mặt trời, tình trạng pin, tiêu thụ điện và tương tác lưới điện theo thời gian thực.
 
-### Tính năng nổi bật
+### ✨ Tính Năng Nổi Bật
 
-- **Giám sát thời gian thực** qua giao thức MQTT
-- **Luồng năng lượng trực quan** - Hiển thị dòng chảy năng lượng giữa PV, Pin, Lưới điện và Tải
-- **Biểu đồ tương tác** cho dữ liệu lịch sử
-- **Điện áp cell pin** - Theo dõi từng cell pin với độ lệch và cảnh báo
-- **Giao diện responsive** - Tối ưu cho desktop và mobile
-- **Dark/Light mode** - Chế độ sáng/tối tự động
-- **Cập nhật SignalR** - Dữ liệu cập nhật không cần tải lại trang
-
----
-
-## Ảnh chụp màn hình
-
-### Giao diện chính - Luồng năng lượng thời gian thực
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│  ⚡ Giám Sát Năng Lượng Mặt Trời - LightEarth Web Pro       │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│    ☀️ PV1        ☀️ PV2           🔋 Pin         🏠 Tải    │
-│    1200W         800W             67%            450W       │
-│       ↓            ↓               ↕              ↑        │
-│    ┌────────────────────────────────────────────────┐      │
-│    │              BIẾN TẦN LUMENTREE                │      │
-│    │              SUNT-6.0kW-T                      │      │
-│    │              Nhiệt độ: 42°C                    │      │
-│    └────────────────────────────────────────────────┘      │
-│                          ↕                                  │
-│                    ⚡ Lưới EVN                              │
-│                       224V                                  │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### Biểu đồ sản lượng điện trong ngày
-
-```
-Công suất (W)
-    │
-3000│        ████████
-    │      ██        ██
-2000│    ██            ██
-    │  ██                ██
-1000│██                    ██
-    │                        ██
-   0├──────────────────────────────
-    6h   9h   12h   15h   18h   21h
-```
-
-### Điện áp Cell Pin
-
-```
-┌──────────────────────────────────────────────────────┐
-│  Điện Áp Pin │ Trung Bình │ Cao Nhất │ Thấp Nhất │ Độ Lệch │
-│    52.3V     │   3.28V    │  3.31V   │   3.25V   │  0.06V  │
-├──────────────────────────────────────────────────────┤
-│ Cell 1: 3.28V │ Cell 2: 3.29V │ Cell 3: 3.27V │ ...    │
-│ Cell 4: 3.31V │ Cell 5: 3.28V │ Cell 6: 3.25V │ ...    │
-└──────────────────────────────────────────────────────┘
-```
+| Tính năng | Mô tả |
+|-----------|-------|
+| **📡 Giám sát thời gian thực** | Kết nối MQTT broker nhận dữ liệu trực tiếp từ biến tần |
+| **⚡ Luồng năng lượng trực quan** | Hiển thị dòng chảy năng lượng giữa PV, Pin, Lưới điện và Tải |
+| **📊 Biểu đồ tương tác** | Biểu đồ Chart.js cho dữ liệu lịch sử và SOC |
+| **🔋 Điện áp cell pin** | Theo dõi từng cell pin với độ lệch và cảnh báo |
+| **📱 Giao diện responsive** | Tối ưu cho desktop và mobile (Zoom 90%) |
+| **🌙 Dark/Light mode** | Chế độ sáng/tối tự động theo hệ thống |
+| **🔄 Cập nhật SignalR** | Dữ liệu real-time không cần tải lại trang |
 
 ---
 
-## Công nghệ sử dụng
+## 🛠️ Công Nghệ Sử Dụng
 
-| Thành phần | Công nghệ |
-|------------|-----------|
-| **Backend** | ASP.NET Core 8.0 |
-| **Frontend** | HTML, JavaScript, Tailwind CSS |
-| **Biểu đồ** | Chart.js |
-| **Real-time** | SignalR WebSocket |
-| **MQTT** | MQTTnet |
-| **API** | RestSharp |
-| **Logging** | Serilog |
-| **Deploy** | Railway |
+<table>
+<tr>
+<td align="center"><strong>Backend</strong></td>
+<td align="center"><strong>Frontend</strong></td>
+<td align="center"><strong>Real-time</strong></td>
+<td align="center"><strong>Deploy</strong></td>
+</tr>
+<tr>
+<td>
+
+- ASP.NET Core 8.0
+- MQTTnet
+- RestSharp
+- Serilog
+
+</td>
+<td>
+
+- HTML5/CSS3
+- JavaScript
+- Tailwind CSS
+- Chart.js
+
+</td>
+<td>
+
+- SignalR WebSocket
+- MQTT Protocol
+
+</td>
+<td>
+
+- Railway
+- Docker
+
+</td>
+</tr>
+</table>
 
 ---
 
-## Dữ liệu thu thập qua MQTT
+## 📊 Dữ Liệu Thu Thập Qua MQTT
 
-### Thông tin thiết bị
-- ID thiết bị và loại
+### 🔌 Thông Tin Thiết Bị
+- ID thiết bị và loại biến tần
 - Phiên bản firmware
-- Nhiệt độ biến tần
+- **Nhiệt độ biến tần** (°C)
 - Chế độ hoạt động (Hòa lưới/Độc lập/UPS)
-- Trạng thái online
+- Trạng thái online/offline
 
-### Sản lượng PV (Quang điện)
+### ☀️ Sản Lượng PV (Quang Điện)
 - Điện áp PV1 và PV2 (V)
 - Công suất PV1 và PV2 (W)
-- Tổng công suất PV
+- Tổng công suất PV (W)
 
-### Thông số Pin
-- Điện áp pin tổng (V)
-- Phần trăm sạc (%)
-- Công suất sạc/xả (W)
-- Dòng điện pin (A)
-- Điện áp từng cell (V)
-- Trạng thái: Đang sạc / Đang xả / Chờ
+### 🔋 Thông Số Pin
+| Thông số | Đơn vị | Nguồn dữ liệu |
+|----------|--------|---------------|
+| Điện áp pin tổng | V | `BatteryVoltage` |
+| Phần trăm sạc | % | `BatteryChargePercentage` |
+| Công suất sạc/xả | W | `BatteryPower` |
+| Điện áp từng cell | V | SignalR real-time |
+| Trạng thái | Đang sạc/Đang xả/Chờ | `BatteryStatus` |
 
-### AC Output/Input
-- Điện áp AC đầu ra (V)
+### ⚡ AC Output/Input
+- Điện áp AC đầu ra (V) - `AcOutputVoltage`
 - Tần số AC (Hz)
-- Công suất AC (W)
-- Điện áp lưới điện (V)
-- Công suất lưới (W) - Nhập/Xuất
+- **Công suất AC** (W) - `AcOutputPower`
+- Điện áp lưới điện (V) - `GridVoltage`
+- Công suất lưới (W) - `GridPower`
 
-### Dữ liệu tiêu thụ
-- Tải cổng load (W) - Essential Load
-- Tải hòa lưới (W) - Home Load
+### 🏠 Dữ Liệu Tiêu Thụ
+| Loại tải | Nguồn dữ liệu | Mô tả |
+|----------|---------------|-------|
+| **Tải cổng load** | `AcOutputPower` | Essential Load (dự phòng) |
+| **Tải hòa lưới** | `HomeLoad` | Toàn bộ tải trong nhà |
 
 ---
 
-## Cài đặt
+## 🚀 Cài Đặt
 
-### Yêu cầu
-
+### Yêu Cầu
 - **.NET 8.0 SDK** trở lên
 - **Git**
 
-### Hướng dẫn cài đặt
+### Hướng Dẫn Cài Đặt
 
-1. **Clone repository**
-   ```bash
-   git clone https://github.com/zixfel/lumentree-dashboard-main.git
-   cd lumentree-dashboard-main
-   ```
+```bash
+# 1. Clone repository
+git clone https://github.com/zixfel/lumentree-dashboard-main.git
+cd lumentree-dashboard-main
 
-2. **Restore dependencies**
-   ```bash
-   dotnet restore
-   ```
+# 2. Restore dependencies
+dotnet restore
 
-3. **Build project**
-   ```bash
-   dotnet build
-   ```
+# 3. Build project
+dotnet build
 
-4. **Chạy ứng dụng**
-   ```bash
-   dotnet run --project LumenTreeInfo.API
-   ```
+# 4. Chạy ứng dụng
+dotnet run --project LumenTreeInfo.API
 
-5. **Truy cập**
-   - HTTP: http://localhost:5165
-   - HTTPS: https://localhost:7077
+# 5. Truy cập
+# HTTP:  http://localhost:5165
+# HTTPS: https://localhost:7077
+```
 
 ---
 
-## Cấu trúc dự án
+## 📁 Cấu Trúc Dự Án
 
 ```
 lumentree-dashboard-main/
-├── LumenTreeInfo.API/          # Web Application
-│   ├── Controllers/            # API Controllers
-│   ├── Views/                  # Razor Views
-│   ├── wwwroot/               # Static files (CSS, JS, Icons)
-│   │   ├── css/
-│   │   ├── js/
-│   │   └── icons/             # Icon biến tần, pin, lưới...
-│   └── DeviceHub.cs           # SignalR Hub
-├── LumenTreeInfo.Lib/          # Core Library
-│   ├── SolarInverterMonitor.cs # MQTT Client
-│   ├── LumentreeClient.cs      # API Client
-│   └── Models/                 # Data Models
-├── LumenTreeInfo.Cmd/          # Command Line Tool
+├── 📂 LumenTreeInfo.API/           # Web Application
+│   ├── Controllers/                # API Controllers
+│   ├── Views/                      # Razor Views
+│   ├── wwwroot/                    # Static files
+│   │   ├── css/                    # Stylesheets
+│   │   ├── js/                     # JavaScript
+│   │   └── icons/                  # Icons (Lumentree inverter, etc.)
+│   └── DeviceHub.cs                # SignalR Hub
+├── 📂 LumenTreeInfo.Lib/           # Core Library
+│   ├── SolarInverterMonitor.cs     # MQTT Client
+│   ├── LumentreeClient.cs          # API Client
+│   └── Models/                     # Data Models
+├── 📂 LumenTreeInfo.Cmd/           # Command Line Tool
+├── 📂 screenshots/                 # Ảnh chụp màn hình
 └── README.md
 ```
 
 ---
 
-## Triển khai Production
+## 🌐 Triển Khai Production
 
 ### Railway (Khuyến nghị)
 
-1. Fork repository về tài khoản GitHub của bạn
+1. Fork repository về tài khoản GitHub
 2. Đăng nhập [Railway](https://railway.app)
 3. Tạo project mới từ GitHub repo
-4. Railway sẽ tự động detect .NET và deploy
+4. Railway tự động detect .NET và deploy
+
+**Production URL:** https://solar-monitor-dashboard-production.up.railway.app
 
 ### Docker
 
@@ -211,15 +213,14 @@ EXPOSE 5165
 ENTRYPOINT ["dotnet", "LumenTreeInfo.API.dll"]
 ```
 
-### Build Production
-
 ```bash
+# Build Production
 dotnet publish LumenTreeInfo.API -c Release -o ./publish
 ```
 
 ---
 
-## Cấu hình
+## ⚙️ Cấu Hình
 
 ### appsettings.json
 
@@ -242,55 +243,55 @@ dotnet publish LumenTreeInfo.API -c Release -o ./publish
 
 ---
 
-## Khắc phục sự cố
+## 🔧 Khắc Phục Sự Cố
 
-### Không kết nối được MQTT
+### ❌ Không kết nối được MQTT
 - Kiểm tra kết nối internet
 - Xác minh Device ID hợp lệ
 - Kiểm tra MQTT broker: `lesvr.suntcn.com:1886`
 
-### Không có dữ liệu biểu đồ
+### ❌ Không có dữ liệu biểu đồ
 - Kiểm tra ngày đã chọn có dữ liệu
 - Xác minh thiết bị online trong ngày đó
 - Kiểm tra Console browser để xem lỗi
 
-### SignalR không kết nối
+### ❌ SignalR không kết nối
 - Kiểm tra WebSocket không bị chặn
 - Xem Console browser để debug
 
 ---
 
-## Đóng góp
+## 🤝 Đóng Góp
 
 1. Fork repository
-2. Tạo branch mới (`git checkout -b feature/tinh-nang-moi`)
-3. Commit thay đổi (`git commit -m 'Thêm tính năng mới'`)
-4. Push lên branch (`git push origin feature/tinh-nang-moi`)
+2. Tạo branch mới: `git checkout -b feature/tinh-nang-moi`
+3. Commit thay đổi: `git commit -m 'Thêm tính năng mới'`
+4. Push lên branch: `git push origin feature/tinh-nang-moi`
 5. Tạo Pull Request
 
 ---
 
-## Giấy phép
+## 📄 Giấy Phép
 
 Dự án này được cấp phép theo [MIT License](LICENSE).
 
 ---
 
-## Tác giả
+## 👨‍💻 Tác Giả
 
 **LightEarth Team**
 
-- Website: [lightearth.vn](https://lightearth.vn)
-- GitHub: [@zixfel](https://github.com/zixfel)
+- 🌐 Website: [lightearth.vn](https://lightearth.vn)
+- 📧 GitHub: [@zixfel](https://github.com/zixfel)
 
 ---
 
-## Lời cảm ơn
+## 🙏 Lời Cảm Ơn
 
 - [MQTTnet](https://github.com/dotnet/MQTTnet) - Thư viện MQTT
 - [Chart.js](https://www.chartjs.org/) - Biểu đồ
 - [Tailwind CSS](https://tailwindcss.com/) - Framework CSS
-- [SignalR](https://dotnet.microsoft.com/apps/aspnet/signalr) - Real-time communication
+- [SignalR](https://dotnet.microsoft.com/apps/aspnet/signalr) - Real-time
 - [Lumentree](http://www.lumentree.co/) - API và thiết bị
 
 ---
@@ -300,5 +301,7 @@ Dự án này được cấp phép theo [MIT License](LICENSE).
 **Được phát triển với ❤️ bởi LightEarth Team**
 
 ⭐ Nếu bạn thấy dự án hữu ích, hãy cho chúng tôi một star!
+
+[![GitHub stars](https://img.shields.io/github/stars/zixfel/lumentree-dashboard-main?style=social)](https://github.com/zixfel/lumentree-dashboard-main)
 
 </div>
