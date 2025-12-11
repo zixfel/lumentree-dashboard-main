@@ -68,7 +68,14 @@ public class SolarMonitorService : IHostedService, IDisposable
                 {
                     try
                     {
+                        // Request device info (PV, Grid, Load, etc.)
                         await _monitor.RequestDeviceInfoAsync(deviceId);
+                        
+                        // Small delay between requests
+                        await Task.Delay(500, cancellationToken);
+                        
+                        // Request battery cell info (Cell voltages)
+                        await _monitor.RequestBatteryCellInfoAsync(deviceId);
                     }
                     catch (Exception ex)
                     {
@@ -79,7 +86,7 @@ public class SolarMonitorService : IHostedService, IDisposable
                     await Task.Delay(1000, cancellationToken);
                 }
 
-                // Wait before next update cycle - 10 seconds as requested
+                // Wait before next update cycle - 10 seconds
                 await Task.Delay(TimeSpan.FromSeconds(10), cancellationToken);
             }
         }
@@ -240,7 +247,7 @@ public class SolarMonitorService : IHostedService, IDisposable
     }
 
     // Add device to monitoring
-    public void AddDevice(string deviceId)
+    public async void AddDevice(string deviceId)
     {
         if (string.IsNullOrEmpty(deviceId))
             return;
@@ -256,7 +263,24 @@ public class SolarMonitorService : IHostedService, IDisposable
         // If we have cached data, send it immediately
         if (_latestData.TryGetValue(deviceId, out var data))
         {
-            _hubContext.Clients.Group(deviceId).SendAsync("ReceiveRealTimeData", data);
+            await _hubContext.Clients.Group(deviceId).SendAsync("ReceiveRealTimeData", data);
+        }
+
+        // Request data immediately for faster initial load
+        try
+        {
+            // Request device info first
+            await _monitor.RequestDeviceInfoAsync(deviceId);
+            
+            // Small delay then request battery cell info
+            await Task.Delay(300);
+            await _monitor.RequestBatteryCellInfoAsync(deviceId);
+            
+            Log.Information("Sent initial data requests for device {DeviceId}", deviceId);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error requesting initial data for device {DeviceId}", deviceId);
         }
     }
 
@@ -273,6 +297,24 @@ public class SolarMonitorService : IHostedService, IDisposable
 
         // Remove from monitoring
         _monitor.RemoveDevice(deviceId);
+    }
+
+    // Request battery cell data for a specific device
+    public async Task RequestBatteryCellDataAsync(string deviceId)
+    {
+        if (string.IsNullOrEmpty(deviceId))
+            return;
+
+        Log.Information("Requesting battery cell data for device: {DeviceId}", deviceId);
+        
+        try
+        {
+            await _monitor.RequestBatteryCellInfoAsync(deviceId);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error requesting battery cell data for {DeviceId}", deviceId);
+        }
     }
 
     // Check for devices that have no subscribers
@@ -374,6 +416,22 @@ public class DeviceHub : Hub
         {
             return DeviceSubscriptions.Keys.ToList();
         }
+    }
+
+    /// <summary>
+    /// Request battery cell data for a specific device
+    /// Called by frontend to manually request cell data refresh
+    /// </summary>
+    /// <param name="deviceId">The device ID to request data for</param>
+    public async Task RequestBatteryCellData(string deviceId)
+    {
+        if (string.IsNullOrEmpty(deviceId))
+            return;
+
+        Log.Information("Client {ConnectionId} requested battery cell data for {DeviceId}", 
+            Context.ConnectionId, deviceId);
+        
+        await _monitorService.RequestBatteryCellDataAsync(deviceId);
     }
 
     /// <summary>
