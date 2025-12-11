@@ -365,6 +365,9 @@ public class HomeController : Controller
                 return null;
             }
             
+            // Get Battery SOC data separately (it's in a different endpoint)
+            var batSocData = await lehtClient.GetBatSocAsync(deviceId, dayStr);
+            
             // Build response compatible with frontend
             var deviceInfo = new {
                 DeviceId = deviceId,
@@ -380,6 +383,7 @@ public class HomeController : Controller
             var gridValueInfo = dayData.Grid?.TableValueInfo?.Select(v => (int)v).ToList() ?? new List<int>();
             var homeloadValueInfo = dayData.Homeload?.TableValueInfo?.Select(v => (int)v).ToList() ?? new List<int>();
             var essentialLoadValueInfo = dayData.EssentialLoad?.TableValueInfo?.Select(v => (int)v).ToList() ?? new List<int>();
+            var batSocValueInfo = batSocData?.BatSoc?.TableValueInfo ?? new List<int>();
             
             return new {
                 DeviceInfo = deviceInfo,
@@ -413,6 +417,12 @@ public class HomeController : Controller
                     TableName = dayData.Homeload?.TableName ?? "家庭负载耗电量",
                     TableValue = (int)(dayData.Homeload?.TableValue ?? 0),
                     TableValueInfo = homeloadValueInfo
+                },
+                BatSoc = new {
+                    TableKey = batSocData?.BatSoc?.TableKey ?? "batSoc",
+                    TableName = batSocData?.BatSoc?.TableName ?? "电池余量百分比",
+                    TableValue = batSocValueInfo.Count > 0 ? batSocValueInfo.Last() : 0,
+                    TableValueInfo = batSocValueInfo
                 },
                 DataSource = "lehtapi.suntcn.com",
                 QueryDate = dayStr

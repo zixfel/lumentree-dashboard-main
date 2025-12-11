@@ -294,6 +294,22 @@ public class LehtTableData
     public List<double>? TableValueInfo { get; set; }
 }
 
+// Separate class for BatSoc because tableValue can be empty string ""
+public class LehtBatSocTableData
+{
+    [JsonPropertyName("tableKey")]
+    public string? TableKey { get; set; }
+    
+    [JsonPropertyName("tableName")]
+    public string? TableName { get; set; }
+    
+    [JsonPropertyName("tableValue")]
+    public string? TableValue { get; set; }  // Can be "" or a number as string
+    
+    [JsonPropertyName("tableValueInfo")]
+    public List<int>? TableValueInfo { get; set; }  // SOC values are integers (percentage)
+}
+
 public class LehtBatSocResponse
 {
     [JsonPropertyName("returnValue")]
@@ -306,6 +322,6 @@ public class LehtBatSocResponse
 public class LehtBatSocData
 {
     [JsonPropertyName("batSoc")]
-    public List<double>? BatSoc { get; set; }
+    public LehtBatSocTableData? BatSoc { get; set; }
 }
 #endregion
