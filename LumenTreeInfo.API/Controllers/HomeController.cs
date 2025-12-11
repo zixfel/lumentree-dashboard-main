@@ -81,6 +81,14 @@ public class HomeController : Controller
                 }
             }
 
+            // OPTION 0: Try LEHT API first (lehtapi.suntcn.com) - BEST DATA SOURCE
+            var lehtResult = await TryLehtApiFallback(deviceId, queryDate);
+            if (lehtResult != null)
+            {
+                Log.Information("Got data from LEHT API for device {DeviceId}", deviceId);
+                return Json(lehtResult);
+            }
+            
             // OPTION 1: Check if we have MQTT cached data (fastest, most reliable)
             var mqttData = _solarMonitor.GetCachedData(deviceId);
             if (mqttData != null)
@@ -332,6 +340,91 @@ public class HomeController : Controller
         }
     }
 
+    /// <summary>
+    /// Fallback to LEHT API (lehtapi.suntcn.com) - PRIMARY DATA SOURCE
+    /// </summary>
+    private async Task<object?> TryLehtApiFallback(string deviceId, DateTime queryDate)
+    {
+        try
+        {
+            var lehtClient = new LehtApiClient();
+            var loggedIn = await lehtClient.LoginAsync("Kim Lan 1", "0986551480");
+            
+            if (!loggedIn)
+            {
+                Log.Warning("LEHT API login failed");
+                return null;
+            }
+            
+            var dayStr = queryDate.ToString("yyyy-MM-dd");
+            var dayData = await lehtClient.GetAllDayDataAsync(deviceId, dayStr);
+            
+            if (dayData == null)
+            {
+                Log.Warning("LEHT API returned no data for device {DeviceId}", deviceId);
+                return null;
+            }
+            
+            // Build response compatible with frontend
+            var deviceInfo = new {
+                DeviceId = deviceId,
+                DeviceType = "Lumentree Inverter (LEHT)",
+                OnlineStatus = 1,
+                RemarkName = "",
+                ErrorStatus = (string?)null
+            };
+            
+            // Convert tableValueInfo from double to int
+            var pvValueInfo = dayData.Pv?.TableValueInfo?.Select(v => (int)v).ToList() ?? new List<int>();
+            var batValueInfo = dayData.Bat?.TableValueInfo?.Select(v => (int)v).ToList() ?? new List<int>();
+            var gridValueInfo = dayData.Grid?.TableValueInfo?.Select(v => (int)v).ToList() ?? new List<int>();
+            var homeloadValueInfo = dayData.Homeload?.TableValueInfo?.Select(v => (int)v).ToList() ?? new List<int>();
+            var essentialLoadValueInfo = dayData.EssentialLoad?.TableValueInfo?.Select(v => (int)v).ToList() ?? new List<int>();
+            
+            return new {
+                DeviceInfo = deviceInfo,
+                Pv = new {
+                    TableKey = dayData.Pv?.TableKey ?? "pv",
+                    TableName = dayData.Pv?.TableName ?? "PV发电量",
+                    TableValue = (int)(dayData.Pv?.TableValue ?? 0),
+                    TableValueInfo = pvValueInfo
+                },
+                Bat = new {
+                    Bats = new[] {
+                        new { TableName = dayData.Bat?.TableName ?? "电池充电电量", TableValue = (int)(dayData.Bat?.TableValue ?? 0), TableKey = "bat" },
+                        new { TableName = "电池放电电量", TableValue = 0, TableKey = "batF" }
+                    },
+                    TableValueInfo = batValueInfo
+                },
+                EssentialLoad = new {
+                    TableKey = dayData.EssentialLoad?.TableKey ?? "essentialLoad",
+                    TableName = dayData.EssentialLoad?.TableName ?? "不断电负载耗电量",
+                    TableValue = (int)(dayData.EssentialLoad?.TableValue ?? 0),
+                    TableValueInfo = essentialLoadValueInfo
+                },
+                Grid = new {
+                    TableKey = dayData.Grid?.TableKey ?? "grid",
+                    TableName = dayData.Grid?.TableName ?? "电网输入电量",
+                    TableValue = (int)(dayData.Grid?.TableValue ?? 0),
+                    TableValueInfo = gridValueInfo
+                },
+                Load = new {
+                    TableKey = dayData.Homeload?.TableKey ?? "homeload",
+                    TableName = dayData.Homeload?.TableName ?? "家庭负载耗电量",
+                    TableValue = (int)(dayData.Homeload?.TableValue ?? 0),
+                    TableValueInfo = homeloadValueInfo
+                },
+                DataSource = "lehtapi.suntcn.com",
+                QueryDate = dayStr
+            };
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error in LEHT API fallback for device {DeviceId}", deviceId);
+            return null;
+        }
+    }
+    
     /// <summary>
     /// Creates a default PV info object for cases when data is not available
     /// </summary>
