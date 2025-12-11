@@ -697,46 +697,96 @@ public class HomeController : Controller
                 ? DateTime.Now.ToString("yyyy-MM-dd") 
                 : date;
             
-            Log.Information("Fetching SOC data from lumentree.net for device {DeviceId} on {Date}", deviceId, queryDate);
+            Log.Information("Fetching SOC data for device {DeviceId} on {Date}", deviceId, queryDate);
             
+            // Try LEHT API first (primary source)
+            try
+            {
+                var lehtClient = new LehtApiClient();
+                var loggedIn = await lehtClient.LoginAsync("Kim Lan 1", "0986551480");
+                
+                if (loggedIn)
+                {
+                    var batSocData = await lehtClient.GetBatSocAsync(deviceId, queryDate);
+                    
+                    if (batSocData?.BatSoc?.TableValueInfo != null && batSocData.BatSoc.TableValueInfo.Count > 0)
+                    {
+                        // Convert to timeline format [{soc, t}, ...]
+                        var timeline = new List<object>();
+                        var baseTime = DateTime.Parse(queryDate);
+                        
+                        for (int i = 0; i < batSocData.BatSoc.TableValueInfo.Count; i++)
+                        {
+                            var time = baseTime.AddMinutes(i * 5);
+                            timeline.Add(new {
+                                soc = batSocData.BatSoc.TableValueInfo[i],
+                                t = time.ToString("HH:mm")
+                            });
+                        }
+                        
+                        Log.Information("Successfully fetched SOC data from LEHT API for device {DeviceId}", deviceId);
+                        return Json(new {
+                            deviceId = deviceId,
+                            date = queryDate,
+                            dataSource = "lehtapi.suntcn.com",
+                            timeline = timeline
+                        });
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "LEHT API failed for SOC data, falling back to lumentree.net");
+            }
+            
+            // Fallback to lumentree.net
             using var httpClient = new HttpClient();
             httpClient.Timeout = TimeSpan.FromSeconds(15);
             
-            // Fetch from lumentree.net SOC API
             var apiUrl = $"https://lumentree.net/api/soc/{deviceId}/{queryDate}";
-            
             var response = await httpClient.GetAsync(apiUrl);
             
             if (!response.IsSuccessStatusCode)
             {
                 Log.Warning("Lumentree SOC API returned {StatusCode} for device {DeviceId}", 
                     response.StatusCode, deviceId);
-                return StatusCode((int)response.StatusCode, "Failed to fetch SOC data from Lumentree");
+                return StatusCode((int)response.StatusCode, "Failed to fetch SOC data");
             }
             
             var content = await response.Content.ReadAsStringAsync();
-            
-            // Parse and return the JSON directly
             var data = System.Text.Json.JsonSerializer.Deserialize<object>(content);
             
-            Log.Information("Successfully fetched SOC data for device {DeviceId} on {Date}", deviceId, queryDate);
+            Log.Information("Successfully fetched SOC data from lumentree.net for device {DeviceId}", deviceId);
             return Json(data);
         }
         catch (HttpRequestException ex)
         {
             Log.Error(ex, "HTTP error fetching SOC data for {DeviceId}", deviceId);
-            return StatusCode(502, $"Failed to connect to Lumentree API: {ex.Message}");
+            return StatusCode(502, $"Failed to connect to API: {ex.Message}");
         }
         catch (TaskCanceledException ex)
         {
             Log.Error(ex, "Timeout fetching SOC data for {DeviceId}", deviceId);
-            return StatusCode(504, "Request to Lumentree API timed out");
+            return StatusCode(504, "Request timed out");
         }
         catch (Exception ex)
         {
             Log.Error(ex, "Error getting SOC data for {DeviceId}", deviceId);
             return StatusCode(500, "An error occurred while fetching SOC data");
         }
+    }
+
+    /// <summary>
+    /// Gets SOC timeline data using format /api/soc/{deviceId}/{date}
+    /// Primary source: lehtapi.suntcn.com
+    /// Returns timeline array with {soc, t} for each 5-minute interval
+    /// </summary>
+    /// <param name="deviceId">The device ID</param>
+    /// <param name="date">Date in format yyyy-MM-dd</param>
+    [Route("/api/soc/{deviceId}/{date}")]
+    public async Task<IActionResult> GetSOCDataByPath(string deviceId, string date)
+    {
+        return await GetSOCData(deviceId, date);
     }
 
     /// <summary>
